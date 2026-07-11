@@ -1,0 +1,153 @@
+{
+  "checkpoint": "23.28",
+  "date": "2026-07-09",
+  "type": "architecture_audit",
+  "summary": {
+    "test_count": 119,
+    "passed": 119,
+    "failed": 0,
+    "xfail_markers": 0,
+    "collection_errors": 0,
+    "overrides_documented": 7,
+    "adrs_accepted": 7,
+    "adrs_fully_implemented": 4,
+    "untested_modules_pct": 70
+  },
+  "adr_implementation": [
+    {
+      "id": "ADR-001",
+      "title": "Execution Graph Compiler statt Interpreter",
+      "status": "ACCEPTED",
+      "implementation_pct": 30,
+      "notes": "MCXF-Format und ExecutionDAG existieren in runtime/optimizer/graph.py. Der Compiler-Pfad (MAS-0301) wurde nicht implementiert. Der bestehende Interpretierer läuft weiter."
+    },
+    {
+      "id": "ADR-002",
+      "title": "Layer-Architektur mit Spine-Validierung",
+      "status": "ACCEPTED",
+      "implementation_pct": 20,
+      "notes": "Keine formale Layer-Zuordnung in Modulen. Spine-Validierung nicht implementiert. ADR-002 ist als Architekturziel dokumentiert, aber nicht durchgesetzt."
+    },
+    {
+      "id": "ADR-003",
+      "title": "Capability-First statt Model-First",
+      "status": "ACCEPTED",
+      "implementation_pct": 10,
+      "notes": "Capability Registry nicht implementiert. scheduler.py und bridge.py verwenden noch tool-basiertes Routing, kein Capability-Routing."
+    },
+    {
+      "id": "ADR-004",
+      "title": "GraphMemory Interface Consolidation",
+      "status": "ACCEPTED",
+      "implementation_pct": 100,
+      "notes": "MemoryProvider, GraphMemoryProvider, MemoryStoreProvider-Protokolle in interfaces.py definiert. SQLiteMemoryAdapter und UnifiedMemory implementieren die Protokolle."
+    },
+    {
+      "id": "ADR-005",
+      "title": "Kernel Interface Consolidation",
+      "status": "ACCEPTED",
+      "implementation_pct": 100,
+      "notes": "kernel.py (MuscalKernel) ist die Authority. kernel_core.py (Kernel) ist FROZEN (ADR-006 Phase 2). KernelProvider-Protokoll in interfaces.py definiert. Keine Änderung an kernel.py nötig."
+    },
+    {
+      "id": "ADR-006",
+      "title": "Dead Code Deprecation Lifecycle",
+      "status": "ACCEPTED",
+      "implementation_pct": 75,
+      "notes": "Phase 1 (Labelled): kernel_core.py + 7 Dateien mit DEPRECATED-Header abgeschlossen. Phase 2 (Frozen): kernel_core.py am 2026-07-09 eingefroren. Phase 3 (Archived): noch nicht begonnen. Phase 4 (Deleted): noch nicht begonnen."
+    },
+    {
+      "id": "ADR-007",
+      "title": "Feature Plugin Migration Path",
+      "status": "ACCEPTED",
+      "implementation_pct": 60,
+      "notes": "Phase 1 (PipelineStage-Protokoll): interfaces.py + PipelineBuilder in features/runtime/ abgeschlossen. Phase 2 (register_stage): plugin_registry.py erweitert, getestet. Phase 3 (Migration): kernel.py-Verdrahtung fehlt — erfordert --allow-core-write."
+    }
+  ],
+  "pipeline_verification": {
+    "verified_stages": ["MKC", "Bridge", "Optimizer", "MEL", "UnifiedMemory"],
+    "missing_stages": ["RAG Enrichment", "Feedback Analysis", "Trace Integration"],
+    "end_to_end": true,
+    "optimizer_integrated": true,
+    "note": "Kernel.py verwendet Optimizer automatisch zwischen Bridge und MEL. Pipeline-Tests decken den vollständigen Pfad ab (test_full_pipeline_with_optimizer_end_to_end)."
+  },
+  "tech_debt": {
+    "todo_count": 0,
+    "fixme_count": 0,
+    "hack_count": 0,
+    "xfail_markers": 0,
+    "collection_errors": [],
+    "script_tests_unmanaged": 28,
+    "note": "28 script-basierte Tests (def check()) werden von pytest nicht erfasst. Müssen manuell ausgeführt werden. Erhöht Risiko von übersehenen Fehlern in CI."
+  },
+  "integration_gaps": [
+    {
+      "area": "ADR-007 Phase 3",
+      "gap": "kernel.py verwendet noch hardcodierte Pipeline-Stages statt build_pipeline()",
+      "blocker": "kernel.py ist immutable (AGENTS.md)",
+      "workaround": "Plugin-Stages können über register_stage() registriert, aber nicht in kernel.py eingebunden werden",
+      "requires_override": true
+    },
+    {
+      "area": "ADR-002 Layer Enforcement",
+      "gap": "Keine formale Layer-Prüfung (Spine) implementiert",
+      "blocker": "Fehlende Runtime-Infrastruktur",
+      "workaround": "Keine — ADR-002 ist dokumentiert aber nicht durchgesetzt"
+    },
+    {
+      "area": "ADR-003 Capability Routing",
+      "gap": "bridge.py verwendet tool-basiertes Matching, kein Capability-Registry",
+      "blocker": "Capability Registry nicht implementiert",
+      "workaround": "Tool-basiertes Routing funktioniert für aktuelle Anwendungsfälle"
+    }
+  ],
+  "coverage_summary": {
+    "total_source_modules": 200,
+    "modules_with_direct_tests": 28,
+    "modules_without_tests": 145,
+    "untested_critical_modules": [
+      "muscal_os.py", "sphere.py", "scheduler.py", "replay_engine.py",
+      "bootstrap.py", "memory_system.py", "causality_engine.py",
+      "distributed_kernel.py", "boot_manager.py"
+    ],
+    "test_files_total": 39,
+    "pytest_compatible": 11,
+    "script_based": 28
+  },
+  "recommendations": [
+    {
+      "priority": "high",
+      "action": "ADR-007 Phase 3: kernel.py auf build_pipeline() umstellen",
+      "effort": "mittel (erfordert --allow-core-write)"
+    },
+    {
+      "priority": "high",
+      "action": "28 Script-Tests in pytest-kompatible Tests migrieren",
+      "effort": "hoch (28 Dateien)"
+    },
+    {
+      "priority": "medium",
+      "action": "ADR-006 Phase 3: kernel_core.py-Abhängigkeiten archivieren",
+      "effort": "gering (nach 2026-08-08)"
+    },
+    {
+      "priority": "low",
+      "action": "ADR-001 Compiler-Pfad implementieren (MAS-0301)",
+      "effort": "sehr hoch"
+    },
+    {
+      "priority": "low",
+      "action": "ADR-002 Layer-Prüfung (Spine) implementieren",
+      "effort": "hoch"
+    },
+    {
+      "priority": "low",
+      "action": "ADR-003 Capability Registry aufbauen",
+      "effort": "hoch"
+    }
+  ],
+  "readiness_score": {
+    "developer_preview_v0.9": 93,
+    "reference_implementation_v1.0": 78
+  }
+}

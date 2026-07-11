@@ -1,0 +1,97 @@
+name: Container CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Podman
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq podman
+
+      - name: Build container image
+        run: podman build --no-cache -t muscal-core:ci -f Containerfile .
+
+      - name: Verify image exists
+        run: podman images muscal-core:ci
+
+  compose-test:
+    runs-on: ubuntu-latest
+    needs: [build]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Podman + podman-compose
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y -qq podman podman-compose
+
+      - name: Build for compose
+        run: podman build --no-cache -t muscal-core:ci -f Containerfile .
+
+      - name: Start services
+        run: podman-compose -f compose.yml up -d
+        env:
+          RUNTIME_FLASK_PORT: "5001"
+          OLLAMA_BASE: "http://ollama:11434"
+          MUSCAL_ENV: "production"
+          MUSCAL_MODE: "standard"
+
+      - name: Wait for health endpoint
+        run: |
+          for i in $(seq 1 15); do
+            if curl -sf http://localhost:5001/api/health > /dev/null 2>&1; then
+              echo "Health check passed"
+              exit 0
+            fi
+            echo "Waiting... ($i/15)"
+            sleep 2
+          done
+          echo "Health check failed"
+          podman-compose -f compose.yml logs muscal
+          exit 1
+
+      - name: Verify ready endpoint
+        run: |
+          STATUS=$(curl -s http://localhost:5001/api/ready | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+          if [ "$STATUS" != "ready" ]; then
+            echo "Ready check failed: $STATUS"
+            exit 1
+          fi
+          echo "Ready: $STATUS"
+
+      - name: Verify live endpoint
+        run: |
+          STATUS=$(curl -s http://localhost:5001/api/live | python3 -c "import sys,json; print(json.load(sys.stdin)['status'])")
+          if [ "$STATUS" != "alive" ]; then
+            echo "Live check failed: $STATUS"
+            exit 1
+          fi
+          echo "Live: $STATUS"
+
+      - name: Verify state endpoint
+        run: |
+          STATUS=$(curl -s http://localhost:5001/api/state | python3 -c "
+import sys, json
+d = json.load(sys.stdin)
+print('Workers:', d.get('workers', []))
+print('Session:', d.get('session_id', '?'))
+          ")
+          echo "$STATUS"
+
+      - name: Show logs on failure
+        if: failure()
+        run: |
+          podman-compose -f compose.yml logs muscal
+
+      - name: Clean up
+        if: always()
+        run: podman-compose -f compose.yml down -t 5

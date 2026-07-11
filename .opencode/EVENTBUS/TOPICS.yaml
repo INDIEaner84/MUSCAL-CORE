@@ -1,0 +1,154 @@
+# MUSCAL Event Bus Topics Definition
+
+Topics:
+  Version: 1.0
+  LastUpdated: 2026-07-10
+
+  # System Topics
+  system:
+    startup:
+      Description: System startup event
+      Publishers: [Boot Manager]
+      Subscribers: [All Agents]
+    
+    shutdown:
+      Description: System shutdown event
+      Publishers: [Boot Manager]
+      Subscribers: [All Agents]
+    
+    alert:
+      Description: System alerts
+      Publishers: [Monitoring Agent]
+      Subscribers: [Meta Orchestrator, All Agents]
+    
+    heartbeat:
+      Description: System heartbeat
+      Publishers: [Monitoring Agent]
+      Subscribers: [Meta Orchestrator]
+
+  # Agent Topics
+  agent:
+    registered:
+      Description: Agent registered in registry
+      Publishers: [Agent Registry]
+      Subscribers: [Meta Orchestrator]
+    
+    deregistered:
+      Description: Agent removed from registry
+      Publishers: [Agent Registry]
+      Subscribers: [Meta Orchestrator]
+    
+    status:
+      Description: Agent status update
+      Publishers: [All Agents]
+      Subscribers: [Meta Orchestrator, Monitoring Agent]
+    
+    error:
+      Description: Agent error occurred
+      Publishers: [All Agents]
+      Subscribers: [Monitoring Agent, Meta Orchestrator]
+
+  # Task Topics
+  task:
+    created:
+      Description: New task created
+      Publishers: [Meta Orchestrator, User]
+      Subscribers: [All Agents]
+    
+    assigned:
+      Description: Task assigned to agent
+      Publishers: [Meta Orchestrator]
+      Subscribers: [Assigned Agent]
+    
+    started:
+      Description: Task processing started
+      Publishers: [Assigned Agent]
+      Subscribers: [Meta Orchestrator]
+    
+    completed:
+      Description: Task completed successfully
+      Publishers: [Assigned Agent]
+      Subscribers: [Meta Orchestrator, Requester]
+    
+    failed:
+      Description: Task failed
+      Publishers: [Assigned Agent]
+      Subscribers: [Meta Orchestrator, Monitoring Agent]
+
+  # Knowledge Topics
+  knowledge:
+    created:
+      Description: New knowledge entry created
+      Publishers: [All Agents]
+      Subscribers: [Memory Architect, Shared Memory]
+    
+    updated:
+      Description: Knowledge entry updated
+      Publishers: [All Agents]
+      Subscribers: [Memory Architect, Shared Memory]
+    
+    deleted:
+      Description: Knowledge entry deleted
+      Publishers: [All Agents]
+      Subscribers: [Memory Architect, Shared Memory]
+    
+    queried:
+      Description: Knowledge query performed
+      Publishers: [All Agents]
+      Subscribers: [Memory Architect]
+
+  # Decision Topics
+  decision:
+    requested:
+      Description: Decision requested
+      Publishers: [All Agents]
+      Subscribers: [Meta Orchestrator, Constitution Guardian]
+    
+    made:
+      Description: Decision made
+      Publishers: [Meta Orchestrator]
+      Subscribers: [All Agents]
+    
+    approved:
+      Description: Decision approved
+      Publishers: [Constitution Guardian]
+      Subscribers: [Requester Agent]
+    
+    rejected:
+      Description: Decision rejected
+      Publishers: [Constitution Guardian]
+      Subscribers: [Requester Agent]
+
+  # Metrics Topics
+  metrics:
+    performance:
+      Description: Performance metrics
+      Publishers: [Performance Agent]
+      Subscribers: [Benchmark Agent, Monitoring Agent]
+    
+    cost:
+      Description: Cost metrics
+      Publishers: [Cost Optimizer]
+      Subscribers: [Meta Orchestrator]
+    
+    quality:
+      Description: Quality metrics
+      Publishers: [Benchmark Agent]
+      Subscribers: [Meta Orchestrator]
+
+  # Security Topics
+  security:
+    scan:
+      Description: Security scan completed
+      Publishers: [Security Agent]
+      Subscribers: [Meta Orchestrator, Monitoring Agent]
+    
+    vulnerability:
+      Description: Vulnerability detected
+      Publishers: [Security Agent]
+      Subscribers: [Meta Orchestrator, Guardian Agent]
+    
+    incident:
+      Description: Security incident
+      Publishers: [Security Agent]
+      Subscribers: [Meta Orchestrator, All Agents]

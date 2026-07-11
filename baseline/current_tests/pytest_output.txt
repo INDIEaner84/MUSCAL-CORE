@@ -1,0 +1,27 @@
+============================= test session starts ==============================
+platform linux -- Python 3.12.3, pytest-9.1.1, pluggy-1.6.0 -- /usr/bin/python3
+cachedir: .pytest_cache
+rootdir: /home/hz/AlitaProject/Codebase/MUSCAL CORE
+configfile: pyproject.toml
+plugins: anyio-4.13.0, asyncio-1.4.0
+asyncio: mode=Mode.STRICT, debug=False, asyncio_default_fixture_loop_scope=None, asyncio_default_test_loop_scope=function
+collecting ... collected 16 items
+
+tests/test_graph_memory.py::test_same_class PASSED                       [  6%]
+tests/test_graph_memory.py::test_add_node PASSED                         [ 12%]
+tests/test_graph_memory.py::test_add_edge PASSED                         [ 18%]
+tests/test_graph_memory.py::test_get_node PASSED                         [ 25%]
+tests/test_graph_memory.py::test_get_related PASSED                      [ 31%]
+tests/test_graph_memory.py::test_query_related PASSED                    [ 37%]
+tests/test_graph_memory.py::test_query_keyword PASSED                    [ 43%]
+tests/test_graph_memory.py::test_ingest PASSED                           [ 50%]
+tests/test_kernel.py::test_kernel_creation PASSED                        [ 56%]
+tests/test_kernel.py::test_kernel_with_graph PASSED                      [ 62%]
+tests/test_kernel.py::test_kernel_run_simple_input PASSED                [ 68%]
+tests/test_kernel.py::test_kernel_run_pipeline_stages PASSED             [ 75%]
+tests/test_kernel.py::test_kernel_graph_events PASSED                    [ 81%]
+tests/test_kernel.py::test_kernel_multiple_runs PASSED                   [ 87%]
+tests/test_lambda_closure.py::test_lambda_closure_all_events_trigger PASSED [ 93%]
+tests/test_lambda_closure.py::test_lambda_closure_system_action_routes_to_handler PASSED [100%]
+
+============================== 16 passed in 0.34s ==============================

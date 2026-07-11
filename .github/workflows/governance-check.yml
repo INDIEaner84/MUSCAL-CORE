@@ -1,0 +1,40 @@
+name: Governance Check
+
+on:
+  push:
+    branches: [main, prototype-stable, develop]
+  pull_request:
+    branches: [main]
+
+env:
+  PYTHON_VERSION: "3.12"
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Governance Sync Check
+        run: python guards/sync_governance.py --check
+
+      - name: Drift Check
+        run: python guards/drift_check.py
+
+      - name: Pre-Commit Hook Test (Core-Files)
+        run: |
+          python guards/pre_commit_hook.py --staged-files kernel.py mkc.py bridge.py
+          echo "Exit code should be 1"
+          test $? -eq 1 || (echo "FAIL: Hook should block core files" && exit 1)
+
+      - name: Pre-Commit Hook Test (Feature-Files)
+        run: |
+          python guards/pre_commit_hook.py --staged-files features/auth/plugin.py
+          echo "Exit code should be 0"

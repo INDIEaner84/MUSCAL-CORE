@@ -1,0 +1,106 @@
+# ==============================
+# Python
+# ==============================
+
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# ==============================
+# Environment / Secrets
+# ==============================
+
+.env
+.env.*
+*.secret
+*.key
+
+# Virtual environments
+venv/
+.venv/
+env/
+
+
+# ==============================
+# Runtime Data / Memory
+# ==============================
+
+storage/
+memory/
+runtime/kernel/data/
+
+# Temporäre Runtime-Daten
+data/*.jsonl
+runtime/*.jsonl
+logs/*.jsonl
+*.jsonl
+mcxf_memory.json
+wissen_cache.json
+
+# Datenbanken
+*.db
+*.sqlite
+*.sqlite3
+
+# Vector Stores
+chroma/
+
+
+# ==============================
+# IDE / Editor
+# ==============================
+
+.vscode/
+.idea/
+*.swp
+*.swo
+
+
+# ==============================
+# Python Packages / Build
+# ==============================
+
+*.egg-info/
+dist/
+build/
+
+
+# ==============================
+# Testing / Quality Tools
+# ==============================
+
+.coverage
+.coverage.*
+htmlcov/
+
+.pytest_cache/
+.mypy_cache/
+mypy_cache/
+.ruff_cache/
+
+.tox/
+.nox/
+
+
+# ==============================
+# Logs
+# ==============================
+
+*.log
+logs/
+
+
+# ==============================
+# OS Files
+# ==============================
+
+.DS_Store
+Thumbs.db
+
+
+# ==============================
+# Node
+# ==============================
+
+node_modules/

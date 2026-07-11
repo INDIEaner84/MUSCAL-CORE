@@ -1,0 +1,148 @@
+# MUSCAL Monitoring Alerts Definition
+
+Alerts:
+  Version: 1.0
+  LastUpdated: 2026-07-10
+
+  # System Alerts
+  system:
+    HighCPU:
+      Description: CPU usage too high
+      Condition: cpu_usage_percent > 80
+      Duration: 5m
+      Severity: warning
+      Action: Notify team
+    
+    CriticalCPU:
+      Description: CPU usage critical
+      Condition: cpu_usage_percent > 95
+      Duration: 2m
+      Severity: critical
+      Action: Page on-call
+    
+    HighMemory:
+      Description: Memory usage too high
+      Condition: memory_usage_percent > 80
+      Duration: 5m
+      Severity: warning
+      Action: Notify team
+    
+    CriticalMemory:
+      Description: Memory usage critical
+      Condition: memory_usage_percent > 95
+      Duration: 2m
+      Severity: critical
+      Action: Page on-call
+    
+    LowDiskSpace:
+      Description: Disk space low
+      Condition: disk_usage_percent > 90
+      Duration: 1h
+      Severity: warning
+      Action: Notify team
+    
+    CriticalDiskSpace:
+      Description: Disk space critical
+      Condition: disk_usage_percent > 95
+      Duration: 10m
+      Severity: critical
+      Action: Page on-call
+
+  # Application Alerts
+  application:
+    HighErrorRate:
+      Description: Error rate too high
+      Condition: error_rate > 5%
+      Duration: 5m
+      Severity: critical
+      Action: Page on-call
+    
+    HighLatency:
+      Description: Latency too high
+      Condition: latency_p95 > 1000ms
+      Duration: 5m
+      Severity: warning
+      Action: Notify team
+    
+    CriticalLatency:
+      Description: Latency critical
+      Condition: latency_p99 > 2000ms
+      Duration: 2m
+      Severity: critical
+      Action: Page on-call
+    
+    LowThroughput:
+      Description: Throughput too low
+      Condition: throughput < 100 rps
+      Duration: 10m
+      Severity: warning
+      Action: Notify team
+
+  # Agent Alerts
+  agents:
+    AgentDown:
+      Description: Agent is down
+      Condition: agent_up == 0
+      Duration: 1m
+      Severity: critical
+      Action: Page on-call
+    
+    AgentHighLatency:
+      Description: Agent response time high
+      Condition: agent_response_time > 5000ms
+      Duration: 5m
+      Severity: warning
+      Action: Notify team
+    
+    AgentTaskFailed:
+      Description: Agent task failure rate high
+      Condition: agent_task_failure_rate > 10%
+      Duration: 10m
+      Severity: warning
+      Action: Notify team
+    
+    AgentHighTokenUsage:
+      Description: Agent token usage high
+      Condition: agent_token_usage > 1000000
+      Duration: 1h
+      Severity: info
+      Action: Log only
+
+  # Event Bus Alerts
+  eventbus:
+    HighQueueSize:
+      Description: Event bus queue size high
+      Condition: eventbus_queue_size > 1000
+      Duration: 5m
+      Severity: warning
+      Action: Notify team
+    
+    DeadLetterHigh:
+      Description: Dead letter count high
+      Condition: eventbus_dead_letter_count > 100
+      Duration: 10m
+      Severity: warning
+      Action: Notify team
+    
+    DeliveryFailed:
+      Description: Event delivery failed
+      Condition: eventbus_delivery_failed > 0
+      Duration: 1m
+      Severity: critical
+      Action: Page on-call
+
+  # Business Alerts
+  business:
+    HighCost:
+      Description: Cost exceeding budget
+      Condition: daily_cost > budget_limit
+      Duration: 1h
+      Severity: warning
+      Action: Notify team
+    
+    LowSuccessRate:
+      Description: Task success rate low
+      Condition: task_success_rate < 90%
+      Duration: 30m
+      Severity: warning
+      Action: Notify team

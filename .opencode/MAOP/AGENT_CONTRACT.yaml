@@ -1,0 +1,142 @@
+# MUSCAL Agent Contract Definition
+# Jeder Agent MUSS diesen Vertrag erfüllen
+
+Contract:
+  Version: 1.0
+  LastUpdated: 2026-07-10
+  
+  # Minimale Anforderungen an jeden Agenten
+  Requirements:
+    Identity:
+      - unique_name
+      - version
+      - type
+      - capabilities
+    
+    Communication:
+      - accepts_input
+      - produces_output
+      - reports_status
+      - handles_errors
+    
+    Knowledge:
+      - reads_from_shared_memory
+      - writes_to_shared_memory
+      - respects_knowledge_policy
+    
+    Security:
+      - no_secrets_in_plaintext
+      - audit_trail
+      - access_control
+      - encryption_support
+    
+    Performance:
+      - responds_within_timeout
+      - reports_metrics
+      - handles_failures
+
+  # Verfügbare Agent Types
+  AgentTypes:
+    core:
+      description: Kerndefinitionen für das System
+      examples:
+        - Memory Architect
+        - Simulation
+        - Benchmark
+        - Meta Orchestrator
+        - Engineering
+        - Testing
+        - Documentation
+    
+    governance:
+      description: Regeln, Sicherheit, Compliance
+      examples:
+        - Constitution Guardian
+        - Ethics Compliance
+        - Chaos Simulation
+        - Security
+    
+    business:
+      description: Geschäftsanwendungen
+      examples:
+        - Innovation Accelerator
+        - Productization
+        - Career Assistant
+    
+    ops:
+      description: Betrieb und Wartung
+      examples:
+        - Cost Optimizer
+        - Deployment
+        - Monitoring
+        - Performance
+
+  # Standard-Aufgaben
+  StandardTasks:
+    - name: status_report
+      description: Status an Meta Orchestrator melden
+      frequency: on_demand
+    
+    - name: knowledge_update
+      description: Wissen in Shared Memory aktualisieren
+      frequency: after_changes
+    
+    - name: error_report
+      description: Fehler an Monitoring melden
+      frequency: on_error
+    
+    - name: metric_report
+      description: Metriken an Benchmark melden
+      frequency: hourly
+
+  # Erwartete Outputs
+  ExpectedOutputs:
+    status_update:
+      format: yaml
+      required_fields:
+        - agent_id
+        - status
+        - timestamp
+        - metrics
+    
+    task_result:
+      format: yaml
+      required_fields:
+        - task_id
+        - status
+        - result
+        - duration
+    
+    error_report:
+      format: yaml
+      required_fields:
+        - error_id
+        - severity
+        - description
+        - timestamp
+
+  # Quality Gates
+  QualityGates:
+    before_execution:
+      - agent_registered
+      - permissions_verified
+      - resources_available
+    
+    after_execution:
+      - result_validated
+      - metrics_recorded
+      - knowledge_updated
+      - status_reported
+
+  # Rollback Requirements
+  Rollback:
+    required_for:
+      - data_changes
+      - architecture_changes
+      - security_changes
+    
+    strategy:
+      - backup_before_change
+      - test_rollback_plan
+      - document_rollback_steps
+      - verify_rollback_success

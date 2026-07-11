@@ -1,0 +1,38 @@
+{
+  "checkpoint": "23.15",
+  "timestamp": "2026-07-08",
+  "input": "write hello.txt with content Hello World",
+  "stages": [
+    {
+      "test": "nl_to_mcxf",
+      "passed": true,
+      "errors": null
+    },
+    {
+      "test": "mcxf_to_execution_plan",
+      "passed": true,
+      "errors": null
+    },
+    {
+      "test": "execution_to_result",
+      "passed": true,
+      "errors": null,
+      "has_file": true,
+      "result_count": 1
+    },
+    {
+      "test": "memory_replay",
+      "passed": true,
+      "memory_id": 5
+    },
+    {
+      "test": "safety_negative",
+      "passed": true,
+      "plan_tools": [
+        "console.print"
+      ]
+    }
+  ],
+  "all_passed": true,
+  "architecture_proven": true
+}

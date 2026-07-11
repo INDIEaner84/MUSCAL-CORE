@@ -1,0 +1,58 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: ruff check .
+
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -e ".[dev]"
+      - run: >
+          pytest -m "not slow" -v --cov --cov-report=term-missing
+          --ignore=tests/test_zzz_api_boot.py
+
+  security:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install pip-audit
+      - run: pip-audit
+
+  governance:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Governance Sync Check
+        run: python guards/sync_governance.py --check
+      - name: Drift Check
+        run: python guards/drift_check.py
+      - name: Confidence Guard
+        run: python guards/confidence_guard.py
+      - name: Override Audit
+        run: python guards/override_audit.py --applied
+      - name: Stub Inventory
+        run: python guards/stub_inventory.py --dead

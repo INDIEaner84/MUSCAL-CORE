@@ -1,0 +1,31 @@
+services:
+  muscal:
+    build:
+      context: .
+      dockerfile: Containerfile
+    ports:
+      - "${RUNTIME_FLASK_PORT:-5001}:5001"
+    volumes:
+      - ./storage:/app/storage:Z
+    environment:
+      - MUSCAL_ENV=${MUSCAL_ENV:-production}
+      - MUSCAL_MODE=${MUSCAL_MODE:-standard}
+      - OLLAMA_BASE=${OLLAMA_BASE:-http://host.containers.internal:11434}
+      - RUNTIME_FLASK_PORT=${RUNTIME_FLASK_PORT:-5001}
+    user: "1000:1000"
+    init: true
+    read_only: true
+    tmpfs:
+      - /tmp
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    restart: unless-stopped
+    stop_grace_period: 30s
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/api/ready')"]
+      interval: 15s
+      timeout: 5s
+      retries: 3
+      start_period: 10s

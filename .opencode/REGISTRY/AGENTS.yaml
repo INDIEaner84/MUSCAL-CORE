@@ -1,0 +1,287 @@
+# MUSCAL Agent Registry
+# Zentrale Registrierungsstelle für alle Agenten
+
+Registry:
+  Version: 1.0
+  LastUpdated: 2026-07-10
+  
+  # Registrierte Agenten
+  Agents:
+    
+    # Core Agenten
+    - ID: AGT-001
+      Name: Memory Architect
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - knowledge_management
+        - memory_lifecycle
+        - knowledge_graph
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL MEMORY ARCHITECT AGENT v1.0.md
+    
+    - ID: AGT-002
+      Name: Digital Twin Simulation
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - system_simulation
+        - impact_analysis
+        - risk_assessment
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL DIGITAL TWIN SIMULATION AGENT v1.0.md
+    
+    - ID: AGT-003
+      Name: Benchmark Evolution
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - performance_measurement
+        - quality_assessment
+        - optimization
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL BENCHMARK EVOLUTION AGENT v1.0.md
+    
+    - ID: AGT-004
+      Name: Meta Orchestrator
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - agent_coordination
+        - task_planning
+        - resource_optimization
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL META ORCHESTRATOR AGENT v1.0.md
+    
+    - ID: AGT-005
+      Name: Engineering Agent
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - code_implementation
+        - bug_fixing
+        - refactoring
+      Documentation: .opencode/OC AGENT BUILD TEAM/ALITA ENGINEERING AGENT v1.0.md
+    
+    - ID: AGT-006
+      Name: Knowledge Analyst
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - knowledge_analysis
+        - pattern_recognition
+        - insight_generation
+      Documentation: .opencode/OC AGENT BUILD TEAM/ALITA KNOWLEDGE ANALYST.md
+    
+    - ID: AGT-007
+      Name: Guardian Agent
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - security_analysis
+        - risk_assessment
+        - protection
+      Documentation: .opencode/OC AGENT BUILD TEAM/ALITA GUARDIAN AGENT v1.0.md
+    
+    - ID: AGT-008
+      Name: HAIL Agent
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - ui_generation
+        - ux_design
+        - accessibility
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL HAIL AGENTv1.0.md
+    
+    - ID: AGT-009
+      Name: Testing Agent
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - test_generation
+        - test_automation
+        - quality_assurance
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL TESTING AGENT v1.0.md
+    
+    - ID: AGT-010
+      Name: Documentation Agent
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - documentation_generation
+        - api_docs
+        - knowledge_base
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL DOCUMENTATION AGENT v1.0.md
+    
+    - ID: AGT-011
+      Name: Migration Agent
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - data_migration
+        - schema_migration
+        - version_management
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL MIGRATION AGENT v1.0.md
+    
+    - ID: AGT-012
+      Name: API Agent
+      Type: core
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - api_design
+        - api_documentation
+        - api_governance
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL API AGENT v1.0.md
+    
+    # Governance Agenten
+    - ID: AGT-020
+      Name: Constitution Guardian
+      Type: governance
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - constitution_enforcement
+        - compliance_check
+        - principle_validation
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL CONSTITUTION GUARDIAN AGENT v1.0.md
+    
+    - ID: AGT-021
+      Name: Ethics Compliance
+      Type: governance
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - ethics_review
+        - compliance_check
+        - risk_assessment
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL ETHICS COMPLIANCE AGENT v1.0.md
+    
+    - ID: AGT-022
+      Name: Chaos Simulation
+      Type: governance
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - adversarial_testing
+        - vulnerability_detection
+        - resilience_testing
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL CHAOS SIMULATION AGENT v1.0.md
+    
+    - ID: AGT-023
+      Name: Security Agent
+      Type: governance
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - security_scanning
+        - penetration_testing
+        - vulnerability_assessment
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL SECURITY AGENT v1.0.md
+    
+    - ID: AGT-024
+      Name: Architecture Reconciliation
+      Type: governance
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - architecture_comparison
+        - gap_analysis
+        - migration_planning
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL AGENT ARE.md
+    
+    # Business Agenten
+    - ID: AGT-030
+      Name: Innovation Accelerator
+      Type: business
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - idea_generation
+        - prd_creation
+        - mvp_planning
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL INNOVATION ACCELERATOR AGENT v1.0.md
+    
+    - ID: AGT-031
+      Name: Productization
+      Type: business
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - product_design
+        - market_analysis
+        - go_to_market
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL PRODUCTIZATION AGENT v1.0.md
+    
+    - ID: AGT-032
+      Name: Career Assistant
+      Type: business
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - career_planning
+        - skill_assessment
+        - job_matching
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL AGENT CONTROL REGEIRUNG.md/ALITA CAREER ASSISTANTv1.0.md
+    
+    # Ops Agenten
+    - ID: AGT-040
+      Name: Cost Optimizer
+      Type: ops
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - cost_analysis
+        - resource_optimization
+        - budget_management
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL COST OPTIMIZER AGENT v1.0.md
+    
+    - ID: AGT-041
+      Name: Deployment Agent
+      Type: ops
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - deployment_management
+        - release_management
+        - rollback_management
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL DEPLOYMENT AGENT v1.0.md
+    
+    - ID: AGT-042
+      Name: Monitoring Agent
+      Type: ops
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - system_monitoring
+        - alerting
+        - incident_response
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL MONITORING AGENT v1.0.md
+    
+    - ID: AGT-043
+      Name: Performance Agent
+      Type: ops
+      Status: active
+      Version: 1.0.0
+      Capabilities:
+        - performance_analysis
+        - optimization
+        - profiling
+      Documentation: .opencode/OC AGENT BUILD TEAM/MUSCAL PERFORMANCE AGENT v1.0.md
+
+  # Registry Statistiken
+  Statistics:
+    TotalAgents: 25
+    CoreAgents: 12
+    GovernanceAgents: 5
+    BusinessAgents: 3
+    OpsAgents: 4
+    ActiveAgents: 25
+    InactiveAgents: 0

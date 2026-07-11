@@ -1,0 +1,38 @@
+project: MUSCAL_BOOTSTRAP
+
+version: 0.1
+
+modules:
+
+  MKC:
+    role: "extract structure from chat"
+    output: "execution_plan"
+
+  MEL:
+    role: "execute deterministic tool calls"
+    input: "execution_plan"
+
+  MEMORY:
+    type: "sqlite + jsonl"
+
+runtime:
+  external_dependencies: true
+
+dependency_policy:
+  declared: true
+  pinned: false
+
+constraints:
+  - deterministic execution
+  - no autonomous tool access
+
+tools:
+  - filesystem.write
+  - math.add
+  - console.print
+  - browser.open
+  - browser.search
+  - browser.click
+  - browser.screenshot
+  - desktop.screenshot
+  - desktop.open

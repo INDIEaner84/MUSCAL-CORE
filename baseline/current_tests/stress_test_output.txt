@@ -1,0 +1,120 @@
+[HISTORY 998] second input
+[HISTORY 999] test input 0
+[HISTORY 1000] test input 1
+[HISTORY 1001] test input 2
+[HISTORY 1002] test input 3
+[HISTORY 1003] test input 4
+[HISTORY 1004] test input 5
+[HISTORY 1005] test input 6
+[HISTORY 1006] test input 7
+[HISTORY 1007] test input 8
+[HISTORY 1008] test input 9
+[HISTORY 1009] test input 10
+[HISTORY 1010] test input 11
+[HISTORY 1011] test input 12
+[HISTORY 1012] test input 13
+[HISTORY 1013] test input 14
+[HISTORY 1014] test input 15
+[HISTORY 1015] test input 16
+[HISTORY 1016] test input 17
+[HISTORY 1017] test input 18
+[HISTORY 1018] test input 19
+[HISTORY 1019] test input 20
+[HISTORY 1020] test input 21
+[HISTORY 1021] test input 22
+[HISTORY 1022] test input 23
+Iter  25: 225 nodes, 200 edges, success=True
+[HISTORY 1023] test input 24
+[HISTORY 1024] test input 25
+[HISTORY 1025] test input 26
+[HISTORY 1026] test input 27
+[HISTORY 1027] test input 28
+[HISTORY 1028] test input 29
+[HISTORY 1029] test input 30
+[HISTORY 1030] test input 31
+[HISTORY 1031] test input 32
+[HISTORY 1032] test input 33
+[HISTORY 1033] test input 34
+[HISTORY 1034] test input 35
+[HISTORY 1035] test input 36
+[HISTORY 1036] test input 37
+[HISTORY 1037] test input 38
+[HISTORY 1038] test input 39
+[HISTORY 1039] test input 40
+[HISTORY 1040] test input 41
+[HISTORY 1041] test input 42
+[HISTORY 1042] test input 43
+[HISTORY 1043] test input 44
+[HISTORY 1044] test input 45
+[HISTORY 1045] test input 46
+[HISTORY 1046] test input 47
+[HISTORY 1047] test input 48
+Iter  50: 450 nodes, 400 edges, success=True
+[HISTORY 1048] test input 49
+[HISTORY 1049] test input 50
+[HISTORY 1050] test input 51
+[HISTORY 1051] test input 52
+[HISTORY 1052] test input 53
+[HISTORY 1053] test input 54
+[HISTORY 1054] test input 55
+[HISTORY 1055] test input 56
+[HISTORY 1056] test input 57
+[HISTORY 1057] test input 58
+[HISTORY 1058] test input 59
+[HISTORY 1059] test input 60
+[HISTORY 1060] test input 61
+[HISTORY 1061] test input 62
+[HISTORY 1062] test input 63
+[HISTORY 1063] test input 64
+[HISTORY 1064] test input 65
+[HISTORY 1065] test input 66
+[HISTORY 1066] test input 67
+[HISTORY 1067] test input 68
+[HISTORY 1068] test input 69
+[HISTORY 1069] test input 70
+[HISTORY 1070] test input 71
+[HISTORY 1071] test input 72
+[HISTORY 1072] test input 73
+Iter  75: 675 nodes, 600 edges, success=True
+[HISTORY 1073] test input 74
+[HISTORY 1074] test input 75
+[HISTORY 1075] test input 76
+[HISTORY 1076] test input 77
+[HISTORY 1077] test input 78
+[HISTORY 1078] test input 79
+[HISTORY 1079] test input 80
+[HISTORY 1080] test input 81
+[HISTORY 1081] test input 82
+[HISTORY 1082] test input 83
+[HISTORY 1083] test input 84
+[HISTORY 1084] test input 85
+[HISTORY 1085] test input 86
+[HISTORY 1086] test input 87
+[HISTORY 1087] test input 88
+[HISTORY 1088] test input 89
+[HISTORY 1089] test input 90
+[HISTORY 1090] test input 91
+[HISTORY 1091] test input 92
+[HISTORY 1092] test input 93
+[HISTORY 1093] test input 94
+[HISTORY 1094] test input 95
+[HISTORY 1095] test input 96
+[HISTORY 1096] test input 97
+[HISTORY 1097] test input 98
+Iter 100: 900 nodes, 800 edges, success=True
+
+=== DRIFT CHECK ===
+[HISTORY 1098] test input 99
+[HISTORY 1099] drift check input
+Nodes before second 'drift check': 900
+Nodes after  second 'drift check': 918
+Growth per identical input: 9 nodes
+
+=== STRESS RESULTS ===
+Total iterations: 100
+Final graph nodes: 900
+Final graph edges: 800
+First failure at iteration: none
+Avg node growth per iteration: 9.00
+Total crashes: 0
+Deterministic: SAME
