@@ -40,7 +40,7 @@ IMMUTABLE (laut `spec/IMMUTABILITY_CONTRACT.md`)
 | 5 | FIFO-Eviction ohne semantische Bewertung | Low | — |
 | 6 | DB-Migration via `scripts/migrate_sqlite.py` | Low | ADR-010 |
 | 7 | CI/CD via `.github/workflows/test.yml` | Low | ADR-008 |
-| 8 | Kein Event-Persistence-ADR | Low | — |
+| 8 | — (Event-Persistence via ADR-012) | Resolved | ADR-012 |
 
 ## Phase abgeschlossen: Critical-Path Tests (18/18)
 
@@ -58,6 +58,8 @@ Folgende ADRs wurden erstellt/aktualisiert:
 | ADR-008 | Deployment Runtime — Supervisor Container Model | ACCEPTED |
 | ADR-009 | Observability Foundation | ACCEPTED |
 | ADR-010 | SQLite Consolidation — Unified Single Database | APPLIED |
+| ADR-011 | Verification Layer Architecture | ACCEPTED |
+| ADR-012 | Event Persistence — Audit Log + Replay | APPLIED |
 
 ## Current Branch
 
@@ -75,7 +77,7 @@ prototype-stable
 |----------|------|-------|
 | TECHNICAL BASELINE | `docs/TECHNICAL_BASELINE.md` | Verbindliche Architektur |
 | ARCHITECTURE.md | `docs/ARCHITECTURE.md` | Übersicht + Layering |
-| ADRs | `specs/adrs/*` | Architecture Decision Records |
+| ADRs | `spec/ADR-*.md` | Architecture Decision Records |
 | IMMUTABILITY CONTRACT | `spec/IMMUTABILITY_CONTRACT.md` | Core/Feature-Grenzen |
 | PLUGIN_API.md | `spec/PLUGIN_API.md` | Plugin SDK |
 

@@ -1087,3 +1087,71 @@ ADR-010 Phase 4 Cleanup: Der Dual-Write (`audit_log` + `storage/logs.jsonl`) war
 - `storage/logs.jsonl` bleibt erhalten (wird nicht gelöscht)
 - Kein API-Change — alle Funktionen behalten gleiche Signaturen
 - Alle Tests passieren unverändert
+
+---
+
+## OVERRIDE-051: ADR-012 Event Persistence — Core Changes (5 Files)
+
+**Date:** 2026-07-11  
+**Status:** APPLIED  
+
+### Änderungen
+
+**1. `plugin_registry.py` (additive, 1 Zeile):**
+```python
+EVENT_BUS = None  # Globale Referenz für EventBus-Injection in Plugins
+```
+
+**2. `plugin_loader.py` (additive, 3 Zeilen):**
+```python
+from plugin_registry import HOOKS, PLUGINS, EVENT_BUS, add_health_listener
+
+# In load_plugins(), vor plugin.register():
+HOOKS["_event_bus"] = EVENT_BUS
+# cleanup:
+del HOOKS["_event_bus"]
+```
+
+**3. `muscal_os.py` (additive, 3 Zeilen):**
+```python
+# In _init_plugins(), VOR load_plugins():
+import plugin_registry
+plugin_registry.EVENT_BUS = self.events
+
+# Nach load_plugins():
+for p in PLUGINS:
+    if hasattr(p, "_wire_bus"):
+        p._wire_bus(self.events)
+```
+
+**4. `event_bus.py` (additive, ~30 Zeilen):**
+```python
+import json
+import sqlite3
+from pathlib import Path
+
+def replay_from_db(self, db_path: Path, topic_filter: Optional[str] = None) -> int:
+    # Liest audit_log-Einträge und published sie als Events
+    # Jeder Event bekommt payload._replayed = True
+```
+
+**5. `config.py` (additive, 1 Zeile):**
+```python
+EVENT_RETENTION_DAYS = int(os.environ.get("MUSCAL_EVENT_RETENTION_DAYS", "30"))
+```
+
+### Begründung
+
+ADR-012 (Event Persistence) benötigt eine Brücke zwischen dem EventBus (in `muscal_os.py` instanziiert) und dem EventPersistencePlugin (in `features/observability/event_persistence.py`). Da Plugins keine Core-Module importieren dürfen und `event_bus.py` in FORBIDDEN_PATTERNS steht, wird EventBus via HOOKS-Injection bereitgestellt — gleiches Pattern wie `_session_id` und `_add_health_listener`.
+
+Die 5 Änderungen sind:
+- **Alle additive** — kein bestehender Code wird geändert
+- **Minimal** — 1-3 Zeilen pro File
+- **Reversibel** — Entfernen der Zeilen stellt alten Zustand her
+
+### Risiko: LOW
+- `EVENT_BUS = None` in plugin_registry — Default None, keine Seiteneffekte
+- `HOOKS["_event_bus"]` wird nach `register()` gelöscht (try/finally)
+- `_wire_bus()` wird nur aufgerufen wenn das Plugin die Methode hat — keine Seiteneffekte für andere Plugins
+- `replay_from_db()` ist additive API — keine Änderung bestehender `publish()`/`subscribe()`-Methoden
+- Kein Breaking Change für Tests (43/43 Tests grün)

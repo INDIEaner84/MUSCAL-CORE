@@ -65,3 +65,65 @@ If a task requires core modification:
 2. Classify as ARCHITECTURE CHANGE
 3. Document in `spec/OVERRIDE.md`
 4. Only execute with `--allow-core-write` flag
+
+---
+
+## SESSION HANDOVER (MANDATORY)
+
+Every session with file changes MUST create a SESSION_HANDOVER before completion.
+
+### SESSION_HANDOVER Template
+
+```markdown
+# SESSION_HANDOVER
+
+**Session ID:** [S-YYYY-MM-DD-XXX]
+**Date:** [YYYY-MM-DD]
+**Status:** [COMPLETED / BLOCKED / ABORTED]
+
+---
+
+## Changed Files
+
+| File | Category | Lock Level |
+|------|----------|------------|
+| [Filename] | [Core/Feature/Documentation/Infrastructure] | [0/1/2/3] |
+
+---
+
+## Change Category
+
+[Description of the type of change]
+
+---
+
+## Open Tasks
+
+- [ ] [Task 1]
+- [ ] [Task 2]
+
+---
+
+## Recommended Next Action
+
+[What should be done next]
+
+---
+
+## Known Risks
+
+- [Risk 1]
+- [Risk 2]
+```
+
+### Storage
+
+SESSION_HANDOVERs are stored in `docs/session_handovers/`.
+Filename: `HANDOVER_[Session_ID].md`
+
+### Update
+
+After creating the SESSION_HANDOVER:
+1. Update `docs/SESSION_REGISTRY.md`
+2. Update `docs/TASK_BOARD.md` (if new tasks emerged)
+3. Git Commit with subject: "Session Handover: [Session ID]"
