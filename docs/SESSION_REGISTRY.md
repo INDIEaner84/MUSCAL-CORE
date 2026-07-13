@@ -15,7 +15,8 @@
 | S-2026-07-12-002 | 2026-07-12 | ABGESCHLOSSEN | 17 | Checkpoint 0.26 — Reconciliation Engine Foundation |
 | S-2026-07-12-003 | 2026-07-12 | ABGESCHLOSSEN | 5 | Checkpoint 0.27 — Category B Reconciliation |
 | S-2026-07-12-004 | 2026-07-12 | ABGESCHLOSSEN | 5 | Checkpoint 0.28 — Repository Cleanup |
-| S-2026-07-12-005 | 2026-07-12 | AKTUELL | 7 | Governance Enforcement v1.1 |
+| S-2026-07-12-005 | 2026-07-12 | ABGESCHLOSSEN | 11 | Governance Enforcement v1.1 |
+| S-2026-07-12-006 | 2026-07-13 | ABGESCHLOSSEN | 10 | Evidence & Reconciliation v1.2 |
 
 ---
 

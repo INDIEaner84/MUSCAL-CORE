@@ -34,9 +34,10 @@
 | T-008 | Reconciliation Engine — Scanner implementation | OPEN | Local | Keine | Kein ADR | 1 |
 | T-009 | Reconciliation Engine — Pre-Commit hook | OPEN | None | Keine | Kein ADR | 0 |
 | T-010 | Reconciliation Engine — CI/CD integration | OPEN | Shared | Review | Kein ADR | 1 |
-| T-011 | Governance Enforcement Layer v1.1 | OPEN | Shared | Architecture Review | Kein ADR | 2 |
+| T-011 | Governance Enforcement Layer v1.1 | DONE | Shared | Architecture Review | Kein ADR | 2 |
+| T-012 | Evidence & Reconciliation Layer v1.2 | OPEN | Shared | Architecture Review | Kein ADR | 2 |
 
-**Betroffene Dateien:** guards/governance_validator.py, guards/pre_commit_hook.py, .github/workflows/governance-check.yml, .pre-commit-config.yaml
+**Betroffene Dateien:** guards/governance_validator.py, guards/governance_evidence.py, guards/governance_reconciliation.py, guards/pre_commit_hook.py, .github/workflows/governance-check.yml, .pre-commit-config.yaml
 
 ---
 

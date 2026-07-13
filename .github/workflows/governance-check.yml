@@ -77,3 +77,67 @@ jobs:
         with:
           name: change-classification-report
           path: docs/governance/CHANGE_CLASSIFICATION_REPORT.md
+
+  evidence:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 5
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: CHANGE Evidence Mapping
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          python guards/governance_evidence.py --map $FILES
+
+      - name: ADR → Change Validation
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          python guards/governance_evidence.py --adr-check $FILES
+
+      - name: Test Evidence Tracking
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          python guards/governance_evidence.py --test-evidence $FILES
+
+      - name: Generate Evidence Report
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          python guards/governance_validator.py --evidence $FILES
+
+      - name: Upload Evidence Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-evidence-report
+          path: docs/governance/GOVERNANCE_EVIDENCE_REPORT.md
+
+  reconciliation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 10
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Dokument-Code-Drift Check
+        run: python guards/governance_reconciliation.py --check-drift
+
+      - name: Commit Traceability Check
+        run: python guards/governance_reconciliation.py --check-traceability
+
+      - name: Session Handover Coverage
+        run: python guards/governance_reconciliation.py --check-coverage
+
+      - name: Generate Reconciliation Report
+        run: python guards/governance_validator.py --reconcile
+
+      - name: Upload Reconciliation Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: governance-reconciliation-report
+          path: docs/governance/GOVERNANCE_RECONCILIATION_REPORT.md

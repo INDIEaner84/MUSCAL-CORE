@@ -136,8 +136,8 @@ def check_override_scope(files: list) -> str:
     Prueft ob Aenderungen durch OVERRIDE-052 abgedeckt sind.
 
     Rueckgabe:
-        "ALLOW_INFRA" — nur guards/, .github/, .pre-commit-config.yaml
-        "BLOCK"       — Core Files im Changeset + override path vorhanden
+        "ALLOW_INFRA" — guards/, .github/, .pre-commit-config.yaml + beliebige Level 0
+        "BLOCK"       — Core Files im Changeset
         "NONE"        — OVERRIDE-052 nicht aktiv oder nicht betroffen
     """
     if not override_052_is_active():
@@ -147,11 +147,17 @@ def check_override_scope(files: list) -> str:
     if not has_override_path:
         return "NONE"
 
+    # Core files sind IMMER blockiert (OVERRIDE-052 deckt sie nicht)
     for f in files:
         if is_core_file_level3(f):
             return "BLOCK"
+
+    # Nicht-OVERRIDE Dateien muessen Level 0 sein (dokumentation)
+    for f in files:
         if not is_override_052_path(f):
-            return "BLOCK"
+            level, _ = classify_file(f)
+            if level > 0:
+                return "BLOCK"
 
     return "ALLOW_INFRA"
 
@@ -277,6 +283,8 @@ def main():
     parser.add_argument("--check-handover", action="store_true", help="Pruefe SESSION_HANDOVER Existenz")
     parser.add_argument("--report", nargs="*", default=None, help="Generiere CHANGE_CLASSIFICATION_REPORT.md")
     parser.add_argument("--pre-commit", action="store_true", help="Pre-Commit Hook (liest staged files aus git)")
+    parser.add_argument("--evidence", nargs="*", default=None, help="Evidence Check via governance_evidence.py")
+    parser.add_argument("--reconcile", action="store_true", help="Reconciliation Check via governance_reconciliation.py")
     args = parser.parse_args()
 
     files = []
@@ -295,6 +303,8 @@ def main():
         files = args.validate
     elif args.report is not None:
         files = args.report
+    elif args.evidence is not None:
+        files = args.evidence
     elif args.check_handover:
         pass
     else:
@@ -342,6 +352,25 @@ def main():
         markdown = generate_markdown_report(files)
         report_path.write_text(markdown, encoding="utf-8")
         print(f"Report generated: {report_path}")
+        sys.exit(0)
+
+    if args.evidence is not None:
+        from guards.governance_evidence import generate_evidence_report
+        files = args.evidence
+        report_path = ROOT / "docs" / "governance" / "GOVERNANCE_EVIDENCE_REPORT.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        markdown = generate_evidence_report(files)
+        report_path.write_text(markdown, encoding="utf-8")
+        print(f"Evidence report generated: {report_path}")
+        sys.exit(0)
+
+    if args.reconcile:
+        from guards.governance_reconciliation import generate_reconciliation_report
+        report_path = ROOT / "docs" / "governance" / "GOVERNANCE_RECONCILIATION_REPORT.md"
+        report_path.parent.mkdir(parents=True, exist_ok=True)
+        markdown = generate_reconciliation_report()
+        report_path.write_text(markdown, encoding="utf-8")
+        print(f"Reconciliation report generated: {report_path}")
         sys.exit(0)
 
 
