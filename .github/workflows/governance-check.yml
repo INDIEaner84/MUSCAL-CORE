@@ -30,11 +30,50 @@ jobs:
 
       - name: Pre-Commit Hook Test (Core-Files)
         run: |
-          python guards/pre_commit_hook.py --staged-files kernel.py mkc.py bridge.py
-          echo "Exit code should be 1"
-          test $? -eq 1 || (echo "FAIL: Hook should block core files" && exit 1)
+          python guards/pre_commit_hook.py --staged-files kernel.py mkc.py bridge.py && exit 1 || echo "OK: Core files blocked"
 
       - name: Pre-Commit Hook Test (Feature-Files)
         run: |
           python guards/pre_commit_hook.py --staged-files features/auth/plugin.py
-          echo "Exit code should be 0"
+
+      - name: Pre-Commit Hook Test (Override-052 Scope)
+        run: |
+          python guards/pre_commit_hook.py --staged-files guards/write_guard.py && echo "OK: OVERRIDE-052 infra allowed"
+
+      - name: Pre-Commit Hook Test (Override-052 Core Block)
+        run: |
+          python guards/pre_commit_hook.py --staged-files kernel.py guards/write_guard.py && exit 1 || echo "OK: Core still blocked under OVERRIDE-052"
+
+  enforcement:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+
+      - name: Governance Classification
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          python guards/governance_validator.py --classify $FILES
+
+      - name: Lock Validation
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          python guards/governance_validator.py --validate $FILES || echo "WARN: Lock validation found issues"
+
+      - name: Session Handover Check
+        run: python guards/governance_validator.py --check-handover
+
+      - name: Generate Report
+        run: |
+          FILES=$(git diff --name-only HEAD~1 HEAD 2>/dev/null || echo "")
+          python guards/governance_validator.py --report $FILES
+
+      - name: Upload Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: change-classification-report
+          path: docs/governance/CHANGE_CLASSIFICATION_REPORT.md

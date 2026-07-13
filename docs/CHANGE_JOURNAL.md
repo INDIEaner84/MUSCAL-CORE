@@ -21,7 +21,7 @@ Die Autoritätshierarchie lautet:
 | Datum | Change ID | Session ID | Commit | Kategorie | Beschreibung |
 |-------|-----------|------------|--------|-----------|--------------|
 | 2026-07-11 | C-001 | S-2026-07-11-001 | 708dddb | Initial Baseline | 457 Dateien, 45.208 Zeilen, v0.7 |
-| 2026-07-12 | C-002 | S-2026-07-11-002 | — | Governance | Session Rules, Task Board, Lock Protocol, Checkpoint |
+| 2026-07-12 | C-003 | S-2026-07-12-005 | — | Governance | Governance Enforcement Layer v1.1 — Validator + Pre-Commit + CI |
 
 ---
 

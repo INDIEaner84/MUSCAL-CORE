@@ -1155,3 +1155,41 @@ Die 5 Änderungen sind:
 - `_wire_bus()` wird nur aufgerufen wenn das Plugin die Methode hat — keine Seiteneffekte für andere Plugins
 - `replay_from_db()` ist additive API — keine Änderung bestehender `publish()`/`subscribe()`-Methoden
 - Kein Breaking Change für Tests (43/43 Tests grün)
+
+---
+
+## OVERRIDE-052: Governance Enforcement Layer v1.1 — guards/ Änderungen
+
+**Date:** 2026-07-12
+**Status:** APPROVED
+
+### Erlaubte Pfade (ausschließlich)
+
+- `guards/**`
+- `.github/**`
+- `.pre-commit-config.yaml`
+
+### Verboten (auch mit OVERRIDE-052)
+
+- `kernel.py`, `config.py`, `event_bus.py`, `muscal_os.py`
+- `plugin_loader.py`, `plugin_registry.py`
+- `runtime/kernel/**`, `runtime/llm/**`, `runtime/api/**`, `runtime/optimizer/**`
+
+### Begründung
+
+Technische Durchsetzung des MUSCAL Governance Layer v1.0 (Commit 8fb860b).
+Betrifft ausschließlich Infrastructure-Ebene (Lock Level 2).
+Keine Core-Komponenten betroffen.
+
+### Spezialbehandlung
+
+OVERRIDE-052 ist KEIN globales `--allow-core-write`.
+Die Prüfung `check_override_scope()` in `guards/governance_validator.py`
+erlaubt ausschließlich die oben genannten Pfade.
+
+### Voraussetzungen
+
+- SESSION_HANDOVER vorhanden
+- CHANGE_JOURNAL Eintrag vorhanden
+- Approval dokumentiert
+- Lock Level 2 Validation bestanden
