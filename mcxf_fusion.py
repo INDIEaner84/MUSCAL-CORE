@@ -43,7 +43,13 @@ def init_fusion(memory_store=None, rag=None, graph=None, sql_path=None):
     if _module_fusion is not None:
         return
     from mcxf_memory_store import MCXFMemoryStore
-    from simple_rag import SimpleRAG
+    try:
+        from simple_rag import SimpleRAG
+    except ImportError:
+        class SimpleRAG:
+            def __init__(self, *a, **kw): pass
+            def add(self, text): pass
+            def search(self, query): return []
     ms = memory_store or MCXFMemoryStore()
     r = rag or SimpleRAG()
     sql = None

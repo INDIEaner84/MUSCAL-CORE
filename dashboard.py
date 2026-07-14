@@ -29,7 +29,13 @@ def dashboard():
 
     with tab2:
         st.subheader("RAG Search")
-        from simple_rag import SimpleRAG
+        try:
+            from simple_rag import SimpleRAG
+        except ImportError:
+            class SimpleRAG:
+                def __init__(self, *a, **kw): pass
+                def add(self, text): pass
+                def search(self, query): return []
         rag = SimpleRAG()
         for d in sql.fetch_all():
             rag.add(str(d))
