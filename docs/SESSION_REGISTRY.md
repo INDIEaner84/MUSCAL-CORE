@@ -19,6 +19,7 @@
 | S-2026-07-12-006 | 2026-07-12 | AKTUELL | 10 | Checkpoint 0.29.1 — Reconciliation Runtime Kernel |
 | S-2026-07-12-006 | 2026-07-13 | ABGESCHLOSSEN | 10 | Evidence & Reconciliation v1.2 |
 | S-2026-07-14-001 | 2026-07-14 | ABGESCHLOSSEN | 6 | Checkpoint 0.30 — ScanContext Migration & Snapshot Integration |
+| S-2026-07-14-002 | 2026-07-14 | AKTUELL | 5 | Checkpoint 0.31 — Rule Engine Implementation |
 
 ---
 
