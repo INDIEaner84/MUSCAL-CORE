@@ -47,7 +47,7 @@ L5 OS LAYER      BootManager, EventBus, Deployment-Modi
 L4 COMPILER      MKC (MCXF), Bridge (Tool-Match), Optimizer, Feedback
 L3 EXECUTION     MEL (Tool-Dispatch), Browser Engine, Desktop Tools
 L2 KERNEL        WriterThread (CQRS), Scheduler, Gate, Governance, RAG
-L1 STORAGE       SQLite (WAL, 12 Tabellen), JSONL, ChromaDB
+L1 STORAGE       SQLite (WAL, 5 Tabellen), JSONL, ChromaDB
 ```
 
 ## 5. Kernmodule

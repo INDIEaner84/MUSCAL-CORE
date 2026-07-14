@@ -30,8 +30,8 @@ python3 main.py
 | Project State | `docs/PROJECT_STATE.md` |
 | Technical Baseline | `docs/TECHNICAL_BASELINE.md` |
 | Documentation Map | `docs/Docs.md` |
-| Architecture Decisions | `specs/adrs/` |
-| Specifications | `specs/rfcs/` |
+| Architecture Decisions | `spec/` |
+| Specifications | `archive/history/rfcs/` |
 | Plugin SDK | `spec/PLUGIN_API.md` |
 
 ## License

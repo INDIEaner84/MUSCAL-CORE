@@ -23,7 +23,7 @@
   └─────────────────────────────────────────────────────────────┘
 ```
 
-## 4 Kernel Perspectives
+## 5 Kernel Perspectives
 
 | Kernel | Layers | Responsibility |
 |--------|--------|---------------|
@@ -56,5 +56,5 @@ MuscalKernel (kernel.py)
 ## See Also
 
 - `docs/TECHNICAL_BASELINE.md` — detailed module descriptions
-- `specs/adrs/` — architecture decisions
-- `specs/rfcs/` — specifications
+- `spec/` — architecture decisions
+- `archive/history/rfcs/` — specifications

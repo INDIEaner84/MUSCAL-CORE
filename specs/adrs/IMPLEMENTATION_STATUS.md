@@ -1,5 +1,10 @@
 # ADR Implementation Status
 
+> **DEPRECATED** — Historical ADR implementation status from v0.7 prototype.
+> ADR numbering and statuses have been restructured.
+> Current authoritative ADR index: `spec/ADR-INDEX.md`
+> Retained for historical reference only.
+
 > Stand: 2026-07-09 | Checkpoint 23.28 — Architecture Audit
 
 | ADR | Titel | Status | Phase | Impl. % | Letzte Änderung |

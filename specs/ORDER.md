@@ -1,5 +1,12 @@
 # MAS Governance Order
 
+> **DEPRECATED** — Historical governance order from early prototype phase.
+> Superseded by:
+> - Session rules: `.opencode/SESSION_RULES.md`
+> - ADR index: `spec/ADR-INDEX.md`
+> - Lock protocol: `docs/LOCK_PROTOCOL.md`
+> Retained for historical reference only.
+
 ## Gültigkeit
 Ab dem 04. Juli 2026 für das MUSCAL CORE-Projekt.
 

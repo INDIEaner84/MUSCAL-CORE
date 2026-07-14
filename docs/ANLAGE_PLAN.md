@@ -2,8 +2,8 @@
 
 ## Ziel
 Aus den ChatGPT-Rohdaten in `/home/hz/Downloads/` eine saubere, strukturierte MAS-RFC-Dokumentenlandschaft aufbauen:
-- `specs/rfcs/` (MAS-RFCs)
-- `specs/adrs/` (Architecture Decision Records)
+- `archive/history/rfcs/` (MAS-RFCs, historisch)
+- `spec/` (Architecture Decision Records)
 - `docs/` (Blueprint + SDD + Manual)
 - `white-paper/` (externe Kommunikation)
 
@@ -19,7 +19,7 @@ Aus den ChatGPT-Rohdaten in `/home/hz/Downloads/` eine saubere, strukturierte MA
 
 | Aktion | Status | Pfad |
 |--------|--------|------|
-| Verzeichnisse anlegen | ✅ | `specs/rfcs/`, `specs/adrs/`, `specs/schemas/json/`, `specs/templates/`, `docs/`, `white-paper/` |
+| Verzeichnisse anlegen | ✅ | `archive/history/rfcs/`, `spec/`, `specs/schemas/json/`, `specs/templates/`, `docs/`, `white-paper/` |
 | ORDER.md | ✅ | `specs/ORDER.md` |
 | RFC_TEMPLATE.md | ✅ | `specs/templates/RFC_TEMPLATE.md` |
 

@@ -180,15 +180,15 @@ These documents are valuable for:
 | Status | ✅ Current |
 | Updated | At major releases |
 
-### `specs/rfcs/MAS-XXXX.md`
+### `archive/history/rfcs/MAS-XXXX.md`
 
 | Field | Value |
 |-------|-------|
-| Purpose | MAS-RFC series (specifications) |
+| Purpose | MAS-RFC series (specifications, historical) |
 | Audience | Architects, developers |
 | Status | 📋 Per RFC (DRAFT → FINAL) |
 
-### `specs/adrs/ADR-XXX.md`
+### `spec/ADR-XXX.md`
 
 | Field | Value |
 |-------|-------|
@@ -214,5 +214,5 @@ These documents are valuable for:
 | ⚙️ Order | `specs/ORDER.md` | ✅ Yes | Architects | current |
 | 📜 History | `docs/history/*` | ❌ No | Reference | outdated |
 | 📦 External | `white-paper/*` | — | External | current |
-| 📦 RFCs | `specs/rfcs/*` | ✅ Yes | Developers | per RFC |
-| 📦 ADRs | `specs/adrs/*` | ✅ Yes | Architects | final |
+| 📦 RFCs | `archive/history/rfcs/*` | ✅ Yes | Developers | per RFC |
+| 📦 ADRs | `spec/ADR-*.md` | ✅ Yes | Architects | final |

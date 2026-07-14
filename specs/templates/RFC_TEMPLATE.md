@@ -1,3 +1,7 @@
+> **DEPRECATED** — Historical RFC template from prototype phase.
+> Current RFCs are archived at `archive/history/rfcs/`.
+> Retained for historical reference only.
+
 ---
 rfc: MAS-XXXX
 title: "Kurzer, prägnanter Titel"

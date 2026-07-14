@@ -1,5 +1,8 @@
 # Developer Preview Readiness Report
 
+> **DEPRECATED** — This document is superseded by `docs/PROJECT_STATE.md`.
+> Retained for historical reference only. Do NOT use as current project status.
+
 **Generated:** 2026-07-10  
 **Project:** MUSCAL CORE v0.7.0
 

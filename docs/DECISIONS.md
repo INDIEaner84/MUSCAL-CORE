@@ -12,7 +12,7 @@ improving the existing MCXF interpreter.
 **Rationale:** Interpreter had 3s+ latency at 50+ tasks.
 Compiler estimated at <50ms.
 
-**See:** `specs/adrs/ADR-001.md`, `specs/rfcs/MAS-0301.md`
+**See:** `spec/ADR-001-kernel.md`, `archive/history/rfcs/MAS-0301.md`
 
 ---
 
@@ -24,7 +24,7 @@ with 4 sub-kernels (Runtime, Cognitive, Control, Observability).
 **Rationale:** Rejected flat architecture in favor of strict
 layer separation with System Spine validation for event transitions.
 
-**See:** `specs/adrs/ADR-002.md`
+**See:** `spec/ADR-002-memory.md`
 
 ---
 
@@ -35,7 +35,7 @@ Tasks are routed against capabilities, not model names.
 
 **Rationale:** Model-First violated MAS-0001 Architecture Principles.
 
-**See:** `specs/adrs/ADR-003.md`, `specs/rfcs/MAS-0001.md`
+**See:** `spec/ADR-003-events.md`, `archive/history/rfcs/MAS-0001.md`
 
 ---
 
