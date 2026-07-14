@@ -16,7 +16,9 @@
 | S-2026-07-12-003 | 2026-07-12 | ABGESCHLOSSEN | 5 | Checkpoint 0.27 — Category B Reconciliation |
 | S-2026-07-12-004 | 2026-07-12 | ABGESCHLOSSEN | 5 | Checkpoint 0.28 — Repository Cleanup |
 | S-2026-07-12-005 | 2026-07-12 | ABGESCHLOSSEN | 11 | Governance Enforcement v1.1 |
+| S-2026-07-12-006 | 2026-07-12 | AKTUELL | 10 | Checkpoint 0.29.1 — Reconciliation Runtime Kernel |
 | S-2026-07-12-006 | 2026-07-13 | ABGESCHLOSSEN | 10 | Evidence & Reconciliation v1.2 |
+| S-2026-07-14-001 | 2026-07-14 | ABGESCHLOSSEN | 6 | Checkpoint 0.30 — ScanContext Migration & Snapshot Integration |
 
 ---
 

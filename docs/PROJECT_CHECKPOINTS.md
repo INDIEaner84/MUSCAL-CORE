@@ -78,3 +78,55 @@ Milestone protocol.
 - Phase 4 (Verification): NIEDRIG
 
 **Nächster Schritt:** Dokumentationsbaseline abschließen, dann Implementierung starten.
+
+---
+
+## Checkpoint 0.25 — Category A Auto-Fixes (10/10)
+
+- Broken links, kernel.py docstring, missing handover, ADR-007→013
+- TASK_BOARD items, test.txt deletion, table count 12→5, perspective count 4→5
+- DEVELOPER_PREVIEW deprecation, GOVERNANCE_CHECKPOINT scope fix
+- All 10 Category A findings resolved and validated
+
+## Checkpoint 0.26 — Reconciliation Engine Foundation
+
+- `reconciliation/` directory structure created
+- 5 scanner specs: ADR_VALIDATOR, DRIFT_DETECTOR, BROKEN_LINK_SCANNER, IMPORT_VALIDATOR, RFC_VALIDATOR
+- 4 validator rule sets: ADR_CONSISTENCY_RULES, LINK_INTEGRITY_RULES, SEMANTIC_DRIFT_RULES, IMPORT_INTEGRITY_RULES
+- 3 report templates: VALIDATION_REPORT, RECONCILIATION_REPORT, FINDING_TEMPLATE
+- Concept hook registry
+
+## Checkpoint 0.27 — Category B Reconciliation
+
+- simple_rag import guards in mcxf_fusion.py, dashboard.py
+- meta_reasoning_kernel guard validated
+- 8 specs/ link fixes in ANLAGE_PLAN.md, Docs.md, PROJECT_STATE.md
+- RestrictedPython sandbox analysis, archive stub analysis
+
+## Checkpoint 0.28 — Repository Cleanup
+
+- RestrictedPython imports removed from plugin_sandbox.py
+- DEPRECATED markers added to specs/ORDER.md, specs/adrs/IMPLEMENTATION_STATUS.md, specs/templates/RFC_TEMPLATE.md
+- Retention banner added to archive/stubs/emergent_consensus.py
+
+## Checkpoint 0.29.1 — Reconciliation Runtime Kernel
+
+- Core data model: Finding, FindingSet, Category, Severity, FindingStatus, Rule, RuleSet, ScanScope
+- Abstract ScannerBase, ReportGenerator (MD format), ReconciliationRunner, HookBase
+- 399 lines, 10 files
+
+## Checkpoint 0.29.2 — Repository Snapshot Layer
+
+- `reconciliation/snapshot/` package with RepositorySnapshot, FileNode, HashCache, DirectoryTree
+- Immutable snapshot built once, consumed by all scanners
+- Lazy SHA-256 hashing with mtime-based invalidation
+- DirectoryTree with glob, filter, lookup, traverse
+- 463 lines, 5 files
+
+## Checkpoint 0.30 — ScanContext Migration & Snapshot Integration
+
+- `ScanContext` frozen dataclass (snapshot + scope + config placeholder)
+- `ScannerBase.scan()` upgraded: `ScanScope` → `ScanContext`; `scan_legacy()` for backward compat
+- `RepositorySnapshot.to_scan_scope()` and `ScanScope.from_snapshot()` bidirectional bridge
+- `ReconciliationRunner` builds snapshot once, creates context, passes to scanners
+- 0 circular imports, 0 breaking changes, 63 net new/changed lines
