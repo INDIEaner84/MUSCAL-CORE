@@ -107,6 +107,8 @@ jobs:
           total = sum(r.count for r in results)
           print(f'Pipeline complete: {total} findings')
           "
+      - name: Baseline comparison
+        run: python3 scripts/compare_baseline.py
 
   lint:
     runs-on: ubuntu-latest
