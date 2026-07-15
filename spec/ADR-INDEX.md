@@ -15,6 +15,7 @@
 | ADR-010 | [SQLite Consolidation — Unified Single Database](./ADR-010-sqlite.md) | APPLIED | 2026-07-10 |
 | ADR-011 | [Verification Layer Architecture](./ADR-011-verification.md) | ACCEPTED | 2026-07-11 |
 | ADR-012 | [Event Persistence — Audit Log + Replay](./ADR-012-event-persistence.md) | APPLIED | 2026-07-11 |
+| ADR-014 | [Unified Tool Runtime](./ADR-014-tool-runtime.md) | PROPOSED | 2026-07-15 |
 
 ## Status Definitions
 
