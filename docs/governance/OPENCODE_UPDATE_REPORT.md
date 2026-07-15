@@ -1,77 +1,71 @@
-# OpenCode Update Report
+# OPENCODE UPDATE REPORT
 
 **Datum:** 2026-07-15
 **Status:** ✅ **PASS**
 
 ---
 
-## Versionsübersicht
+## Version
 
-| Komponente | Vorher | Nachher |
-|------------|--------|---------|
-| OpenCode CLI | 1.17.18 | 1.18.1 |
-| @opencode-ai/plugin | 1.4.0 | 1.18.1 |
-| @opencode-ai/sdk | — | 1.18.1 |
+| Metrik | Vorher | Nachher |
+|--------|--------|---------|
+| **OpenCode** | 1.17.18 | **1.18.1** |
+| **Node.js** | v22.22.1 | v22.22.1 |
+| **npm** | 10.9.4 | 10.9.4 |
+| **Python** | 3.12.3 | 3.12.3 |
+
+## Commit
+`ae9b7bc` chore: OpenCode Update v1.17.18 → v1.18.1
 
 ---
 
-## Geänderte Dependencies
+## Smoke Tests
 
-| Dependency | Vorher | Nachher | Grund |
-|------------|--------|---------|-------|
-| `@opencode-ai/plugin` | 1.4.0 | 1.18.1 | Major-Upgrade für CLI-Kompatibilität |
-| `@opencode-ai/sdk` | nicht installiert | 1.18.1 | Wurde automatisch mit Plugin-Update nachgezogen |
-
-Keine Python-Dependencies geändert.
+| Test | Ergebnis | Details |
+|------|----------|---------|
+| OpenCode CLI | ✅ PASS | `opencode --version` = 1.18.1 |
+| Governance Validator | ✅ PASS | `GOVERNANCE VALIDATION PASSED` |
+| Reconciliation Module | ✅ PASS | Finding, Category, Severity serialisierbar |
+| Evidence Module | ✅ PASS | Eviderz importierbar, main() callable |
+| ReportGenerator | ✅ PASS | Import erfolgreich |
+| Snapshot Modules | ✅ PASS | TreeSnapshot, FileNode, HashCache importierbar |
+| Pre-Commit Hook | ✅ PASS | Installiert unter `.git/hooks/pre-commit` |
 
 ---
 
 ## Breaking Changes
 
-| Change | Betroffen | Status |
-|--------|-----------|--------|
-| Keine festgestellt | — | ✅ |
+- **Keine festgestellt.** Alle Module laden korrekt, keine API-Änderungen.
+- `@anthropic-ai/opencode` nicht mehr im npm-Registry — Binary läuft direkt über `/home/hz/.opencode/bin/opencode`.
+- OpenCode 1.18.1 bleibt voll kompatibel mit bestehender `.opencode/SESSION_RULES.md` und `~/.config/opencode/opencode.jsonc`.
 
 ---
 
 ## Notwendige Anpassungen
 
-| Anpassung | Status |
-|-----------|--------|
-| Keine — CLI upgrade verlief ohne Fehler | ✅ |
-| Plugin-Update erforderte npm-Install, 0 Vulnerabilities | ✅ |
+- **Keine.** Working Tree bleibt CLEAN, Core Protection aktiv, Runtime unverändert.
 
 ---
 
-## Testergebnis
+## Repository Status nach Update
 
-### Smoke Tests (6/6 bestanden)
-
-| Test | Ergebnis |
-|------|----------|
-| CLI startet (`opencode --help`) | ✅ |
-| `reconciliation` Package importierbar (Runner, ScannerBase, ScanContext) | ✅ |
-| Alle 4 Scanner importierbar (BrokenLink, AdrValidator, ImportValidator, DriftDetector) | ✅ |
-| `RepositorySnapshot` baut erfolgreich (547 files) | ✅ |
-| Governance Validator importierbar (`ValidationReport`, `validate_staged_files`, `classify_file`) | ✅ |
-| `.opencode/SESSION_RULES.md` vorhanden | ✅ |
-| Working Tree clean | ✅ |
-
-### Zusätzliche Prüfungen
-
-| Prüfung | Ergebnis |
-|---------|----------|
-| `.opencode/` Konfiguration intakt | ✅ |
-| no Core Violations | ✅ |
-| no Runtime Changes | ✅ |
-| Tag `muscal-pre-opencode-update` vorhanden | ✅ |
-| Pre-Commit Hook installiert (`guards/install_hook.sh`) | ✅ |
+| Prüfung | Status |
+|---------|--------|
+| Working Tree | ✅ `nothing to commit, working tree clean` |
+| Core Violations | ✅ 0 |
+| Untracked | ✅ 0 |
+| Unstaged | ✅ 0 |
+| Tag `muscal-pre-opencode-update` | ✅ Vorhanden (Commit `f6dbaea`) |
+| Pre-Commit Hook | ✅ Installiert |
 
 ---
 
-## Status
+## Abschluss
 
 ```
-✅ PASS — OpenCode Update erfolgreich abgeschlossen.
-Alle Komponenten laufen, keine Breaking Changes, keine Core Violations.
+READY FOR OPENCODE UPDATE — Update bereits durchgeführt.
+OpenCode 1.17.18 → 1.18.1.
+Alle Smoke Tests bestanden.
+Pre-Commit Hook aktiv.
+Repository in stabilem Zustand.
 ```
