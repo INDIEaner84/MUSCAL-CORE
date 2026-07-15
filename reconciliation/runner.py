@@ -24,6 +24,24 @@ class ReconciliationRunner:
     def register(self, scanner: ScannerBase) -> None:
         self._scanners[scanner.name] = scanner
 
+    def register_defaults(self) -> None:
+        from reconciliation.scan import (
+            AdrValidatorScanner,
+            BrokenLinkScanner,
+            DriftDetectorScanner,
+            ImportValidatorScanner,
+            RfcValidatorScanner,
+        )
+
+        for scanner_cls in [
+            BrokenLinkScanner,
+            AdrValidatorScanner,
+            ImportValidatorScanner,
+            DriftDetectorScanner,
+            RfcValidatorScanner,
+        ]:
+            self.register(scanner_cls())
+
     def run_all(
         self,
         context: ScanContext | None = None,

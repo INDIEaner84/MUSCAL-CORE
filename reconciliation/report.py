@@ -89,27 +89,54 @@ class ReportGenerator:
             "",
             "## 1. Executive Summary",
             "",
+        ]
+
+        summary = self.build_summary(results)
+        lines += [
+            "| Metric | Value |",
+            "|--------|-------|",
+            f"| Scanners | {summary['scanners']} |",
+            f"| Finding Sets | {summary['finding_sets']} |",
+            f"| Total Findings | {summary['total_findings']} |",
+            "",
+            "### By Category",
+            "",
+            "| Category | Count |",
+            "|----------|-------|",
+        ]
+        for cat in ["A", "B", "C", "D"]:
+            lines.append(f"| {cat} | {summary['categories'][cat]} |")
+
+        lines += [
+            "",
+            "### By Severity",
+            "",
+            "| Severity | Count |",
+            "|----------|-------|",
+        ]
+        for sev in ["Critical", "High", "Medium", "Low"]:
+            lines.append(f"| {sev} | {summary['severity'][sev]} |")
+
+        lines += [
+            "",
             "## 2. Scanner Results",
             "",
             "| Scanner | Findings | Cat A | Cat B | Cat C | Cat D |",
             "|---------|----------|-------|-------|-------|-------|",
         ]
 
-        total_findings = 0
-        total_a = total_b = total_c = total_d = 0
         for fs in results:
             ca = len(fs.by_category.get(Category.A, []))
             cb = len(fs.by_category.get(Category.B, []))
             cc = len(fs.by_category.get(Category.C, []))
             cd = len(fs.by_category.get(Category.D, []))
-            total_findings += fs.count
-            total_a += ca
-            total_b += cb
-            total_c += cc
-            total_d += cd
             lines.append(f"| {fs.scanner} | {fs.count} | {ca} | {cb} | {cc} | {cd} |")
 
-        lines.append(f"| **Total** | **{total_findings}** | **{total_a}** | **{total_b}** | **{total_c}** | **{total_d}** |")
+        total_a = summary["categories"]["A"]
+        total_b = summary["categories"]["B"]
+        total_c = summary["categories"]["C"]
+        total_d = summary["categories"]["D"]
+        lines.append(f"| **Total** | **{summary['total_findings']}** | **{total_a}** | **{total_b}** | **{total_c}** | **{total_d}** |")
 
         for fs in results:
             if not fs.findings:
@@ -133,3 +160,23 @@ class ReportGenerator:
             f"*Report generated {today} by Reconciliation Engine.*",
         ]
         return "\n".join(lines)
+
+    def build_summary(self, results: list[FindingSet]) -> dict:
+        total_findings = 0
+        categories = {"A": 0, "B": 0, "C": 0, "D": 0}
+        severity = {"Critical": 0, "High": 0, "Medium": 0, "Low": 0}
+
+        for fs in results:
+            total_findings += fs.count
+            for cat in Category:
+                categories[cat.value] += len(fs.by_category.get(cat, []))
+            for sev in Severity:
+                severity[sev.value] += len(fs.by_severity.get(sev, []))
+
+        return {
+            "scanners": len(results),
+            "finding_sets": len(results),
+            "total_findings": total_findings,
+            "categories": categories,
+            "severity": severity,
+        }
