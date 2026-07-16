@@ -14,6 +14,7 @@ from reconciliation.snapshot.repository_snapshot import RepositorySnapshot
 
 IMPORT_RE = re.compile(r"^(?:from\s+(\S+)\s+import|\s*import\s+(\S+))", re.MULTILINE)
 WILDCARD_RE = re.compile(r"from\s+\S+\s+import\s+\*")
+TYPE_CHECKING_RE = re.compile(r"if\s+TYPE_CHECKING\s*:")
 
 CORE_MODULES = {
     "api_server", "boot_manager", "bridge", "chat_compiler", "cognitive_diff",
@@ -28,6 +29,12 @@ CORE_PREFIXES = {
     "runtime.api", "runtime.kernel", "runtime.llm", "runtime.observation",
     "runtime.optimizer", "runtime.services", "guards", "spec",
 }
+
+EXCLUDED_DIRS = {"archive", "archive/history", "archive/stubs"}
+EXCLUDED_PATTERNS = {
+    "tests/conftest.py",
+}
+TEST_IMPORTS = {"pytest", "yaml", "pyyaml"}
 
 
 def _sanitize(s: str, max_len: int = 30) -> str:
@@ -122,6 +129,9 @@ class ImportValidatorScanner(ScannerBase):
         for py_file in py_files:
             if py_file.rel_path.startswith("__pycache__"):
                 continue
+            if self._is_excluded(py_file.rel_path):
+                continue
+
             try:
                 with open(py_file.abs_path, "r", errors="replace") as f:
                     content = f.read()
@@ -129,7 +139,18 @@ class ImportValidatorScanner(ScannerBase):
                 continue
 
             imports = _extract_imports(content)
+            in_type_checking = False
+            for line in content.split("\n"):
+                if TYPE_CHECKING_RE.search(line):
+                    in_type_checking = True
+                elif line and not line.startswith(" ") and not line.startswith("\t"):
+                    in_type_checking = False
+
             for imp in imports:
+                if in_type_checking:
+                    continue
+                if self._is_test_import(imp["base_module"], py_file.rel_path):
+                    continue
                 findings.extend(self._check_import(imp, py_file, snapshot, third_party))
 
             for wc_match in WILDCARD_RE.finditer(content):
@@ -146,6 +167,19 @@ class ImportValidatorScanner(ScannerBase):
                 ))
 
         return FindingSet(scanner=self.name, findings=findings)
+
+    def _is_excluded(self, rel_path: str) -> bool:
+        for pattern in EXCLUDED_DIRS:
+            if rel_path.startswith(pattern):
+                return True
+        if rel_path in EXCLUDED_PATTERNS:
+            return True
+        return False
+
+    def _is_test_import(self, base_module: str, rel_path: str) -> bool:
+        if not rel_path.startswith("tests/"):
+            return False
+        return base_module in TEST_IMPORTS
 
     def _check_import(
         self,
