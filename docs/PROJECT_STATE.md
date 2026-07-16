@@ -60,6 +60,7 @@ Folgende ADRs wurden erstellt/aktualisiert:
 | ADR-010 | SQLite Consolidation — Unified Single Database | APPLIED |
 | ADR-011 | Verification Layer Architecture | ACCEPTED |
 | ADR-012 | Event Persistence — Audit Log + Replay | APPLIED |
+| ADR-014 | Unified Tool Runtime — Consolidation | PROPOSED |
 
 ## Current Branch
 

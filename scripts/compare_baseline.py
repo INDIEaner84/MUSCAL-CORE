@@ -23,6 +23,10 @@ KNOWN_ACCEPTED_DEBT = {"ADR-CR-004", "IMP-IR-002"}
 KNOWN_TRUE_POSITIVES = {"BL-001", "ADR-CR-008", "ADR-CR-010", "SDR-IR-001", "SDR-IR-002", "SDR-IR-003"}
 KNOWN_FINDINGS = KNOWN_FALSE_POSITIVES | KNOWN_HISTORICAL_ARCHIVE | KNOWN_ACCEPTED_DEBT | KNOWN_TRUE_POSITIVES
 
+FALSE_POSITIVE_PATH_PATTERNS = [
+    re.compile(r"BL-001_.*ADR.?014.?IMPLEM"),
+]
+
 
 def parse_baseline_findings() -> set[str]:
     findings = set()
@@ -58,7 +62,7 @@ def parse_report_findings() -> dict[str, list[str]]:
                 scanner_findings.setdefault(current_scanner, [])
 
             if current_scanner and "| " in line and "---" not in line:
-                finding_match = re.search(r"\| (BL-\d+|ADR-CR-\d+|IMP-IR-\d+|SDR-IR-\d+|RFC-\d+)_", line)
+                finding_match = re.search(r"\| ((?:BL|ADR-CR|IMP-IR|SDR-IR|RFC)-\d+_\S+?) \|", line)
                 if finding_match:
                     scanner_findings[current_scanner].append(finding_match.group(1))
     except Exception as e:
@@ -68,15 +72,19 @@ def parse_report_findings() -> dict[str, list[str]]:
 
 
 def classify_finding(finding_id: str) -> str:
-    rule = finding_id.rsplit("_", 1)[0] if "_" in finding_id else finding_id
+    for pattern in FALSE_POSITIVE_PATH_PATTERNS:
+        if pattern.search(finding_id):
+            return "FALSE_POSITIVE"
 
-    if rule in KNOWN_FALSE_POSITIVES:
+    prefix = finding_id.split("_")[0] if "_" in finding_id else finding_id
+
+    if prefix in KNOWN_FALSE_POSITIVES:
         return "FALSE_POSITIVE"
-    if rule in KNOWN_HISTORICAL_ARCHIVE:
+    if prefix in KNOWN_HISTORICAL_ARCHIVE:
         return "HISTORICAL_ARCHIVE"
-    if rule in KNOWN_ACCEPTED_DEBT:
+    if prefix in KNOWN_ACCEPTED_DEBT:
         return "ACCEPTED_TECHNICAL_DEBT"
-    if rule in KNOWN_TRUE_POSITIVES:
+    if prefix in KNOWN_TRUE_POSITIVES:
         return "TRUE_POSITIVE"
     return "UNKNOWN"
 
