@@ -8,6 +8,7 @@ from boot_manager import BootManager, BootPhase, BootReport
 from cognitive_diff import CognitiveDiffEngine
 from event_bus import EventBus, EventPriority
 from kernel import MuscalKernel
+from runtime.event_store import EventStore
 from kernel_diff_engine import KernelDiffEngine, StateStore, link_trace_to_state
 from os_config import DeploymentMode, MuscalConfig, load_config
 from schema import (
@@ -41,6 +42,7 @@ class MuscalOS:
         self.trace = TraceEngine()
         self._state_store = StateStore()
         self._kernel_diff = KernelDiffEngine()
+        self.event_store: Optional[EventStore] = None
 
     def start(self) -> BootReport:
         self._start_time = time.time()
@@ -49,6 +51,7 @@ class MuscalOS:
 
         self.boot.run_phase(BootPhase.INIT, [
             ("create_storage", lambda: self._ensure_storage()),
+            ("init_event_store", lambda: self._init_event_store()),
             ("init_event_bus", lambda: self._init_event_bus()),
         ])
 
@@ -116,6 +119,7 @@ class MuscalOS:
         self._boot_report = report
         self.events.publish("os.stopped", {"uptime": time.time() - self._start_time},
                             source="muscal_os")
+        self._close_event_store()
         return report
 
     def restart(self) -> BootReport:
@@ -222,11 +226,45 @@ class MuscalOS:
             "boot": self._boot_report.summary if self._boot_report else "never booted",
             "events": self.events.get_stats(),
             "kernel_ready": self.kernel is not None,
+            "event_store": self.event_store is not None,
         }
 
     def _ensure_storage(self) -> bool:
         os.makedirs(self.config.storage_path, exist_ok=True)
         return os.path.isdir(self.config.storage_path)
+
+    def _init_event_store(self) -> bool:
+        try:
+            self.event_store = EventStore()
+            self.events.subscribe("*", self._persist_to_store)
+            return True
+        except Exception as e:
+            if self.boot.steps:
+                self.boot.steps[-1].error = str(e)
+            return False
+
+    def _persist_to_store(self, msg) -> None:
+        if self.event_store is None:
+            return
+        try:
+            self.event_store.append({
+                "topic": msg.topic,
+                "payload": msg.payload,
+                "source": msg.source,
+                "priority": msg.priority,
+                "timestamp": msg.timestamp,
+                "id": msg.id,
+            })
+        except Exception:
+            pass
+
+    def _close_event_store(self) -> None:
+        if self.event_store is not None:
+            try:
+                self.event_store.close()
+            except Exception:
+                pass
+            self.event_store = None
 
     def _init_event_bus(self) -> bool:
         self.events.publish(EVENT_BOOT_INIT, {}, source="muscal_os")
