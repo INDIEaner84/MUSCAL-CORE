@@ -1,8 +1,9 @@
 import builtins
 import os as _real_os
 
-# RestrictedPython DISABLED per OVERRIDE-038.
-# See spec/OVERRIDE.md for history and reactivation instructions.
+# Sandbox reactivated without RestrictedPython.
+# Uses namespace isolation + import whitelist + resource watchdog.
+# See spec/OVERRIDE.md for history (OVERRIDE-034, OVERRIDE-038).
 
 from features.sandbox.resource_watchdog import ResourceWatchdog, TimeoutExpired
 
@@ -43,11 +44,6 @@ def _sandbox_import(name, globals=None, locals=None, fromlist=(), level=0):
     return builtins.__import__(name, globals, locals, fromlist, level)
 
 
-# DEPRECATED: _SANDBOX_GLOBALS preserved for reference only.
-# Was populated from RestrictedPython globals. No longer active.
-_SANDBOX_GLOBALS = {}
-
-
 class PluginSandboxError(Exception):
     pass
 
@@ -57,7 +53,30 @@ class PluginSandbox:
         self.watchdog = ResourceWatchdog(max_cpu_ms=max_execution_ms)
 
     def exec_module(self, source, filename="<plugin>"):
-        raise PluginSandboxError(
-            "Sandbox disabled per OVERRIDE-038. "
-            "Use validate_plugin() workflow."
-        )
+        safe_builtins = {
+            k: v for k, v in builtins.__dict__.items()
+            if k not in ('exec', 'eval', 'compile', '__import__',
+                         'open', 'os', 'sys', 'subprocess',
+                         'socket', 'ctypes', 'importlib',
+                         'getattr', 'setattr', 'delattr')
+        }
+        safe_builtins['__import__'] = _sandbox_import
+        safe_builtins['__build_class__'] = builtins.__dict__['__build_class__']
+
+        namespace = {
+            "__builtins__": safe_builtins,
+            "__name__": "__plugin__",
+            "open": _sandboxed_open,
+            "os": _RestrictedOS(),
+        }
+
+        self.watchdog.start()
+        try:
+            code = compile(source, filename, "exec")
+            exec(code, namespace)
+        except TimeoutExpired:
+            raise PluginSandboxError("Plugin exceeded CPU time limit")
+        finally:
+            self.watchdog.stop()
+
+        return namespace

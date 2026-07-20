@@ -272,3 +272,40 @@ def test_event_store_independent_of_audit_log():
         table_names = [r[0] for r in rows]
         assert "stored_events" in table_names
         store.close()
+
+
+# ── Replay Suppression (3) ───────────────────────────────────
+
+
+def test_replay_suppressed_by_eventstore():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        store = _make_store(tmpdir)
+        store.append(_make_event(id="evt-normal", topic="suppress.test"))
+        store.append(_make_event(id="evt-replay", topic="suppress.test", payload={"_replayed": True}))
+        assert store.event_count() == 1
+        results = store.replay()
+        assert len(results) == 1
+        assert results[0]["id"] == "evt-normal"
+        store.close()
+
+
+def test_replay_returns_none_for_suppressed():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        store = _make_store(tmpdir)
+        result = store.append(_make_event(id="evt-suppressed", topic="suppress.none", payload={"_replayed": True}))
+        assert result is None
+        assert store.event_count() == 0
+        store.close()
+
+
+def test_normal_events_still_persisted():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        store = _make_store(tmpdir)
+        seq1 = store.append(_make_event(id="evt-no-flag", topic="persist.check"))
+        assert seq1 == 1
+        seq2 = store.append(_make_event(id="evt-false-flag", topic="persist.check", payload={"_replayed": False}))
+        assert seq2 == 2
+        seq3 = store.append(_make_event(id="evt-only-original", topic="persist.check", payload={"_original_event_id": "orig-1"}))
+        assert seq3 == 3
+        assert store.event_count() == 3
+        store.close()

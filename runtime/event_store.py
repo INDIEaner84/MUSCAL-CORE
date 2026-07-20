@@ -37,15 +37,18 @@ class EventStore:
         )
         self._conn.commit()
 
-    def append(self, event: Dict[str, Any]) -> int:
+    def append(self, event: Dict[str, Any]) -> Optional[int]:
         """Append a single event. Returns the assigned seq.
 
+        Returns None if event is suppressed (replay marker).
         Raises sqlite3.IntegrityError on duplicate event_id.
         """
         import time
         import datetime
 
         payload = event.get("payload", {})
+        if isinstance(payload, dict) and payload.get("_replayed"):
+            return None
         if not isinstance(payload, str):
             payload = json.dumps(payload, ensure_ascii=False, sort_keys=False)
 

@@ -101,4 +101,5 @@ class ReplayService:
         original_id = event.get("id", "")
         if original_id:
             payload["_original_event_id"] = original_id
+        payload["_replayed"] = True
         return payload

@@ -227,3 +227,65 @@ def test_replay_returns_same_events_for_same_cursor():
         assert [e.payload for e in batch1_events] == [e.payload for e in batch2_events]
         store.close()
         bus.clear()
+
+
+# ── Replay Suppression (3) ───────────────────────────────────
+
+
+def test_replay_build_payload_includes_replayed():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        service, bus, store = _make_service(tmpdir)
+        event = {
+            "topic": "test.replay.marker",
+            "payload": {"data": "hello"},
+            "source": "test",
+            "id": "evt-marker-42",
+        }
+        payload = service._build_payload(event)
+        assert payload["_replayed"] is True
+        assert payload["_original_event_id"] == "evt-marker-42"
+        assert payload["data"] == "hello"
+        store.close()
+        bus.clear()
+
+
+def test_replay_all_suppresses_duplicates():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        service, bus, store = _make_service(tmpdir)
+        store.append(_make_event(id="evt-s1", topic="suppress.dup", payload={"n": 1}))
+        store.append(_make_event(id="evt-s2", topic="suppress.dup", payload={"n": 2}))
+        store.append(_make_event(id="evt-s3", topic="suppress.dup", payload={"n": 3}))
+        assert store.event_count() == 3
+
+        received = []
+        bus.subscribe("suppress.dup", lambda msg: received.append(msg))
+
+        count = service.replay_all()
+        assert count == 3
+        assert len(received) == 3
+        assert received[0].payload["n"] == 1
+        assert store.event_count() == 3
+        store.close()
+        bus.clear()
+
+
+def test_replay_no_duplicate_growth():
+    with tempfile.TemporaryDirectory() as tmpdir:
+        service, bus, store = _make_service(tmpdir)
+        store.append(_make_event(id="evt-g1", topic="suppress.growth", payload={"v": 10}))
+        store.append(_make_event(id="evt-g2", topic="suppress.growth", payload={"v": 20}))
+        count_before = store.event_count()
+
+        bus.subscribe("suppress.growth", lambda msg: None)
+        service.replay_all()
+        assert store.event_count() == count_before
+
+        service.reset_cursor()
+        service.replay_all()
+        assert store.event_count() == count_before
+
+        service.reset_cursor()
+        service.replay_all()
+        assert store.event_count() == count_before
+        store.close()
+        bus.clear()

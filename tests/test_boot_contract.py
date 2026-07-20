@@ -137,8 +137,12 @@ def test_plugin_registry_build_pipeline_filter():
 def test_plugin_registry_hooks():
     from plugin_registry import HOOKS, PLUGINS, run_hooks
     PLUGINS.clear()
-    for k in HOOKS:
-        HOOKS[k].clear()
+    for k in list(HOOKS.keys()):
+        val = HOOKS[k]
+        if isinstance(val, list):
+            val.clear()
+        else:
+            del HOOKS[k]
     expected = {
         "kernel_before", "kernel_after",
         "mkc_before", "mkc_after",
