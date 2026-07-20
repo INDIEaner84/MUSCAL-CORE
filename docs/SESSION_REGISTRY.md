@@ -22,6 +22,7 @@
 | S-2026-07-14-002 | 2026-07-14 | ABGESCHLOSSEN | 5 | Checkpoint 0.31 — Rule Engine Implementation |
 | S-2026-07-14-003 | 2026-07-14 | ABGESCHLOSSEN | 2 | Checkpoint 0.32 — BrokenLinkScanner Implementation |
 | S-2026-07-15-001 | 2026-07-15 | ABGESCHLOSSEN | 2 | Checkpoint 0.33 — ADR Validator Scanner |
+| S-2026-07-20-001 | 2026-07-20 | ABGESCHLOSSEN | 1 | HDR-001 Decision Readiness Audit |
 
 ---
 

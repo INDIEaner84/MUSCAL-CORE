@@ -1,6 +1,6 @@
 # MUSCAL CORE — Project State
 
-**Letzte Aktualisierung:** 2026-07-11
+**Letzte Aktualisierung:** 2026-07-20
 **Nächste Aktualisierung:** Bei nächstem Meilenstein
 
 ---
@@ -81,6 +81,15 @@ prototype-stable
 | ADRs | `spec/ADR-*.md` | Architecture Decision Records |
 | IMMUTABILITY CONTRACT | `spec/IMMUTABILITY_CONTRACT.md` | Core/Feature-Grenzen |
 | PLUGIN_API.md | `spec/PLUGIN_API.md` | Plugin SDK |
+
+## Governance Status
+
+| Decision | Status | Blocking |
+|----------|--------|----------|
+| HDR-001 (Architecture Council) | READY FOR HUMAN DECISION | Yes — 9 dependencies |
+| HDR-002 (PMGA) | BLOCKED by HDR-001 | Yes |
+| HDR-003 (Master Coding AI) | BLOCKED by HDR-001 | Yes |
+| HDR-004 (Requirements) | BLOCKED by HDR-001 | Yes |
 
 ## Historische Audits
 

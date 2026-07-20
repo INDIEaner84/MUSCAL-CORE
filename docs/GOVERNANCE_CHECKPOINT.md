@@ -1,6 +1,6 @@
 # MUSCAL CORE — GOVERNANCE_CHECKPOINT
 
-**Letzte Aktualisierung:** 2026-07-11
+**Letzte Aktualisierung:** 2026-07-20
 **Erstellt von:** Multi-Session Governance Plan
 
 ---
@@ -107,6 +107,7 @@ Implementierung
 
 | Datum | Änderung | Session ID | Commit |
 |-------|----------|------------|--------|
+| 2026-07-20 | HDR-001 Decision Readiness Audit abgeschlossen | S-2026-07-20-001 | — |
 | 2026-07-11 | Governance Layer erstellt | S-2026-07-11-002 | — |
 | 2026-07-11 | Initial Baseline | S-2026-07-11-001 | 708dddb |
 
