@@ -14,7 +14,7 @@ from reconciliation.report import ReportGenerator
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-EXPECTED_TOTAL = 54
+EXPECTED_TOTAL = 53
 EXPECTED_SCANNERS = [
     "broken_link_scanner",
     "adr_validator_scanner",
@@ -24,7 +24,7 @@ EXPECTED_SCANNERS = [
 ]
 EXPECTED_BY_SCANNER = {
     "broken_link_scanner": 9,
-    "adr_validator_scanner": 4,
+    "adr_validator_scanner": 3,
     "import_validator_scanner": 2,
     "drift_detector_scanner": 3,
     "rfc_validator_scanner": 36,

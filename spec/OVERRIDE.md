@@ -1093,68 +1093,69 @@ ADR-010 Phase 4 Cleanup: Der Dual-Write (`audit_log` + `storage/logs.jsonl`) war
 ## OVERRIDE-051: ADR-012 Event Persistence — Core Changes (5 Files)
 
 **Date:** 2026-07-11  
-**Status:** APPLIED  
+**Status:** SUPERSEDED  
+**Superseded by:** Phase 1B.1–1B.4 (EventStore + ReplayService architecture)
 
-### Änderungen
+### Original Intent
 
-**1. `plugin_registry.py` (additive, 1 Zeile):**
-```python
-EVENT_BUS = None  # Globale Referenz für EventBus-Injection in Plugins
+5 additive Core-Änderungen für Event Persistence:
+1. `plugin_registry.py` — `EVENT_BUS = None`
+2. `plugin_loader.py` — `HOOKS["_event_bus"]` Injection
+3. `muscal_os.py` — `plugin_registry.EVENT_BUS = self.events`
+4. `event_bus.py` — `replay_from_db()` Methode
+5. `config.py` — `EVENT_RETENTION_DAYS`
+
+### What Was Actually Implemented
+
+Die 5 Änderungen wurden **NICHT** implementiert. Stattdessen wurde eine alternative Architektur implementiert:
+
+| OVERRIDE-051 Element | Implementiert in | Architektur |
+|---|---|---|
+| EventBus-Injection in Plugins | Phase 1B.2: `muscal_os.py` `_init_event_store()` | EventStore als Observer via Wildcard-Subscriber |
+| `replay_from_db()` | Phase 1B.3: `features/replay/replay_service.py` | Dedizierter ReplayService |
+| `EVENT_BUS` globale Referenz | Nicht benötigt | MuscalOS ist Lifecycle-Owner |
+| `EVENT_RETENTION_DAYS` | Nicht benötigt | EventStore = Append-Only, keine Retention |
+| `_replayed` Flag | Bewusst nicht implementiert | Kein Bedarf in aktueller Architektur |
+
+### Why EventBus.replay_from_db() Was Not Implemented
+
+1. **Core-Immutability**: `event_bus.py` ist ein Core-File. `replay_from_db()` würde SQLite-Abhängigkeit in den Transport-Layer bringen.
+2. **Separation of Concerns**: Transport (EventBus) ≠ Persistence (EventStore) ≠ Orchestrierung (ReplayService).
+3. **Architekturentscheidung**: Option C (EventStore als Passive API) + Option B (Dedizierter Service) wurde bewusst gewählt.
+
+### Why Global EVENT_BUS Injection Is Not Needed
+
+1. `event_persistence.py` hat bereits `_wire_bus(bus)` — funktioniert ohne globale Referenz.
+2. MuscalOS ist der Lifecycle-Owner. Plugins werden via `plugin_loader.load_plugins()` geladen.
+3. Die globale Referenz würde die Architektur unnötig koppeln.
+
+### Replay Loop / Duplicate Persistence Risk
+
+```
+EventStore → ReplayService → EventBus.publish() → _persist_to_store() → EventStore.append()
 ```
 
-**2. `plugin_loader.py` (additive, 3 Zeilen):**
-```python
-from plugin_registry import HOOKS, PLUGINS, EVENT_BUS, add_health_listener
+Ohne Suppression/Deduplication entstehen Duplikate. Daher:
+- ReplayService wird in Phase 1B.4 NICHT automatisch in MuscalOS Boot integriert.
+- ReplayService bleibt ein explizit aufrufbarer, manueller Service.
+- Future Work: Phase 1B.5 mit Suppression-Mechanismus.
 
-# In load_plugins(), vor plugin.register():
-HOOKS["_event_bus"] = EVENT_BUS
-# cleanup:
-del HOOKS["_event_bus"]
-```
+### Test Migration
 
-**3. `muscal_os.py` (additive, 3 Zeilen):**
-```python
-# In _init_plugins(), VOR load_plugins():
-import plugin_registry
-plugin_registry.EVENT_BUS = self.events
+Die ursprünglich 4 fehlgeschlagenen OVERRIDE-051 Tests wurden in Phase 1B.4 migriert:
 
-# Nach load_plugins():
-for p in PLUGINS:
-    if hasattr(p, "_wire_bus"):
-        p._wire_bus(self.events)
-```
+| Test | Aktion | Begründung |
+|---|---|---|
+| `test_replay_returns_count` | MIGRIERT auf ReplayService | Semantik gültig |
+| `test_replay_sets_replayed_flag` | ENTFERNT | `_replayed` Flag nicht implementiert (bewusst) |
+| `test_replay_with_topic_filter` | MIGRIERT auf ReplayService | Semantik gültig |
+| `test_system_boot_wires_event_persistence` | MIGRIERT | Plugin-Loading-Check gültig, EVENT_BUS obsolet |
 
-**4. `event_bus.py` (additive, ~30 Zeilen):**
-```python
-import json
-import sqlite3
-from pathlib import Path
+### Historical Record
 
-def replay_from_db(self, db_path: Path, topic_filter: Optional[str] = None) -> int:
-    # Liest audit_log-Einträge und published sie als Events
-    # Jeder Event bekommt payload._replayed = True
-```
-
-**5. `config.py` (additive, 1 Zeile):**
-```python
-EVENT_RETENTION_DAYS = int(os.environ.get("MUSCAL_EVENT_RETENTION_DAYS", "30"))
-```
-
-### Begründung
-
-ADR-012 (Event Persistence) benötigt eine Brücke zwischen dem EventBus (in `muscal_os.py` instanziiert) und dem EventPersistencePlugin (in `features/observability/event_persistence.py`). Da Plugins keine Core-Module importieren dürfen und `event_bus.py` in FORBIDDEN_PATTERNS steht, wird EventBus via HOOKS-Injection bereitgestellt — gleiches Pattern wie `_session_id` und `_add_health_listener`.
-
-Die 5 Änderungen sind:
-- **Alle additive** — kein bestehender Code wird geändert
-- **Minimal** — 1-3 Zeilen pro File
-- **Reversibel** — Entfernen der Zeilen stellt alten Zustand her
-
-### Risiko: LOW
-- `EVENT_BUS = None` in plugin_registry — Default None, keine Seiteneffekte
-- `HOOKS["_event_bus"]` wird nach `register()` gelöscht (try/finally)
-- `_wire_bus()` wird nur aufgerufen wenn das Plugin die Methode hat — keine Seiteneffekte für andere Plugins
-- `replay_from_db()` ist additive API — keine Änderung bestehender `publish()`/`subscribe()`-Methoden
-- Kein Breaking Change für Tests (43/43 Tests grün)
+Dieser Override bleibt als nachvollziehbare architektonische Entscheidung erhalten.
+Die ursprüngliche Idee (EventBus.replay_from_db()) wurde durch eine sauberere
+Architektur (EventStore + ReplayService) ersetzt.
 
 ---
 

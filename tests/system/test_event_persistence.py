@@ -103,82 +103,66 @@ class TestEventPersistence:
             os.chdir(original)
 
     def test_replay_returns_count(self):
-        import config
-        from runtime.database import init_db
+        import time
+        from runtime.event_store import EventStore
         from event_bus import EventBus
-        from features.observability.event_persistence import Plugin
+        from features.replay.replay_service import ReplayService
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            original = os.getcwd()
-            os.chdir(tmpdir)
-            old_db = config.DB_PATH
-            config.DB_PATH = type(config.DB_PATH)(os.path.join(tmpdir, "muscal.db"))
-            init_db()
+            db_path = os.path.join(tmpdir, "muscal.db")
+            store = EventStore(db_path=db_path)
             bus = EventBus()
-            plugin = Plugin()
-            plugin._wire_bus(bus)
+
             for i in range(3):
-                bus.publish(f"replay.{i}", {}, source="test")
-            count = bus.replay_from_db(config.DB_PATH)
+                store.append({
+                    "topic": f"replay.{i}",
+                    "payload": {},
+                    "source": "test",
+                    "priority": "NORMAL",
+                    "timestamp": time.time(),
+                    "id": f"evt-replay-{i}",
+                })
+
+            service = ReplayService(store=store, bus=bus)
+            count = service.replay_all()
             assert count == 3
-            config.DB_PATH = old_db
-            os.chdir(original)
-
-    def test_replay_sets_replayed_flag(self):
-        import config
-        from runtime.database import init_db
-        from event_bus import EventBus
-        from features.observability.event_persistence import Plugin
-
-        with tempfile.TemporaryDirectory() as tmpdir:
-            original = os.getcwd()
-            os.chdir(tmpdir)
-            old_db = config.DB_PATH
-            config.DB_PATH = type(config.DB_PATH)(os.path.join(tmpdir, "muscal.db"))
-            init_db()
-            bus = EventBus()
-            plugin = Plugin()
-            plugin._wire_bus(bus)
-            bus.publish("test.replay", {"x": 1}, source="t")
-
-            received = []
-            bus.subscribe("test.replay", lambda m: received.append(m))
-            bus.replay_from_db(config.DB_PATH)
-
-            assert len(received) == 1
-            assert received[0].payload.get("_replayed") is True
-            assert "_replayed_at" in received[0].payload
-            config.DB_PATH = old_db
-            os.chdir(original)
+            store.close()
 
     def test_replay_with_topic_filter(self):
-        import config
-        from runtime.database import init_db
+        import time
+        from runtime.event_store import EventStore
         from event_bus import EventBus
-        from features.observability.event_persistence import Plugin
+        from features.replay.replay_service import ReplayService
 
         with tempfile.TemporaryDirectory() as tmpdir:
-            original = os.getcwd()
-            os.chdir(tmpdir)
-            old_db = config.DB_PATH
-            config.DB_PATH = type(config.DB_PATH)(os.path.join(tmpdir, "muscal.db"))
-            init_db()
+            db_path = os.path.join(tmpdir, "muscal.db")
+            store = EventStore(db_path=db_path)
             bus = EventBus()
-            plugin = Plugin()
-            plugin._wire_bus(bus)
-            bus.publish("keep.me", {"id": 1}, source="t")
-            bus.publish("skip.me", {"id": 2}, source="t")
 
-            count = bus.replay_from_db(config.DB_PATH, topic_filter="keep.me")
+            store.append({
+                "topic": "keep.me",
+                "payload": {"id": 1},
+                "source": "t",
+                "priority": "NORMAL",
+                "timestamp": time.time(),
+                "id": "evt-keep-1",
+            })
+            store.append({
+                "topic": "skip.me",
+                "payload": {"id": 2},
+                "source": "t",
+                "priority": "NORMAL",
+                "timestamp": time.time(),
+                "id": "evt-skip-1",
+            })
+
+            service = ReplayService(store=store, bus=bus)
+            count = service.replay_topic("keep.me")
             assert count == 1
-            config.DB_PATH = old_db
-            os.chdir(original)
+            store.close()
 
     def test_system_boot_wires_event_persistence(self):
-        from plugin_registry import PLUGINS, EVENT_BUS
-        from event_bus import EventBus
-        EVENT_BUS = EventBus()
-
+        from plugin_registry import PLUGINS
         from plugin_loader import load_plugins
         load_plugins()
 
