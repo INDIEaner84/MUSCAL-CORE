@@ -30,6 +30,7 @@ dev = [
     "mypy>=1.0",
     "pip-audit>=2.7.0",
     "pytest>=9.0",
+    "pytest-asyncio>=0.21.0",
     "pytest-cov>=4.0",
     "ruff>=0.1",
 ]
@@ -66,6 +67,9 @@ target-version = "py312"
 
 [tool.ruff.lint]
 select = ["E", "F", "W", "I"]
+
+[tool.pytest-asyncio]
+mode = "auto"
 
 [tool.coverage.run]
 source = ["."]

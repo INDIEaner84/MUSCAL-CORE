@@ -1193,3 +1193,79 @@ erlaubt ausschließlich die oben genannten Pfade.
 - CHANGE_JOURNAL Eintrag vorhanden
 - Approval dokumentiert
 - Lock Level 2 Validation bestanden
+
+---
+
+## OVERRIDE-053 — config.py: Phase 1A Runtime Configuration
+
+**Date:** 2026-07-15
+**Author:** OpenCode (build mode)
+**Approval:** User execution prompt — MUSCAL Phase 1A Batch A v2
+
+## Motivation
+
+Phase 1A requires IPC (socket/TCP) and daemon configuration variables in config.py. These are additive only — no existing variables are modified.
+
+## Files Changed
+
+`config.py` — append 6 new environment variables:
+- MUSCAL_SOCKET_PATH
+- MUSCAL_TCP_HOST
+- MUSCAL_TCP_PORT
+- MUSCAL_DAEMON_MODE
+- MUSCAL_MAX_AGENT_RESTARTS
+- MUSCAL_IPC_TIMEOUT
+
+## Rationale
+
+- Additive change: no existing vars modified, no existing behavior altered
+- Environment-configurable: follows existing pattern (os.environ.get with defaults)
+- No circular imports: new vars reference only BASE_DIR and standard library
+- Required for Phase 1A: process manager, IPC, daemon all need these values
+
+## Risk Assessment
+
+- Low risk: purely additive configuration, no behavioral changes to existing code
+- Backward compatible: all new vars have safe defaults
+- Testable: can verify with `python -c "from config import MUSCAL_SOCKET_PATH; print('OK')"`
+
+---
+
+## OVERRIDE-054 — write_guard false positive: runtime/*.py
+
+**Date:** 2026-07-15
+**Author:** OpenCode (build mode)
+**Approval:** User execution prompt — MUSCAL Phase 1A Batch B
+
+## Motivation
+
+The write_guard in `guards/write_guard.py` blocks ALL paths under `runtime/`
+because its core_dir matching uses `startswith`:
+`core_dir.startswith(rel_dir)` → `"runtime/kernel".startswith("runtime")` → True.
+
+This is a false positive: `runtime/process_manager.py`, `runtime/ipc_server.py`,
+`runtime/ipc_client.py`, `runtime/daemon.py` are NOT in any CORE_DIR
+(`runtime/kernel`, `runtime/llm`, `runtime/optimizer`, `runtime/api`,
+`runtime/services`).
+
+## Files Created
+
+- `runtime/process_manager.py` — ProcessManager + ManagedAgent + AgentState
+- `runtime/ipc_server.py` — IPCServer (Unix/TCP, JSON Lines)
+- `runtime/ipc_client.py` — IPCClient (auto-reconnect, event subscriptions)
+- `runtime/daemon.py` — MUSCALDaemon (orchestrator, stub handlers, signals)
+- `tests/test_process_manager.py` — ProcessManager unit tests
+- `tests/test_ipc.py` — IPC server+client integration tests
+- `tests/test_daemon.py` — Daemon lifecycle tests
+
+## Rationale
+
+- New files, no existing file modifications
+- No frozen files touched
+- No forbidden imports
+
+## Risk Assessment
+
+- Low risk: new files only, no behavioral changes to existing code
+- Guard false positive would block Phase 1A entirely — override required
+

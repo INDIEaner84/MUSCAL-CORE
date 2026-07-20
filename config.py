@@ -34,3 +34,10 @@ OBSERVATION_INTERVAL = float(os.environ.get("OBSERVATION_INTERVAL", "5.0"))
 WRITER_TIMEOUT       = float(os.environ.get("WRITER_TIMEOUT", "5.0"))
 
 RUNTIME_FLASK_PORT = int(os.environ.get("RUNTIME_FLASK_PORT", "5001"))
+
+MUSCAL_SOCKET_PATH      = Path(os.environ.get("MUSCAL_SOCKET_PATH", str(BASE_DIR / "runtime.sock")))
+MUSCAL_TCP_HOST         = os.environ.get("MUSCAL_TCP_HOST", "127.0.0.1")
+MUSCAL_TCP_PORT         = int(os.environ.get("MUSCAL_TCP_PORT", "0"))
+MUSCAL_DAEMON_MODE      = os.environ.get("MUSCAL_DAEMON_MODE", "auto")
+MUSCAL_MAX_AGENT_RESTARTS = int(os.environ.get("MUSCAL_MAX_AGENT_RESTARTS", "3"))
+MUSCAL_IPC_TIMEOUT      = float(os.environ.get("MUSCAL_IPC_TIMEOUT", "30.0"))
