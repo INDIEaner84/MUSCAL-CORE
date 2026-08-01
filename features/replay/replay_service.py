@@ -103,3 +103,9 @@ class ReplayService:
             payload["_original_event_id"] = original_id
         payload["_replayed"] = True
         return payload
+
+    def _build_event(self, event: Dict[str, Any]) -> Dict[str, Any]:
+        """Build event dict for EventStore.append with is_replayed flag."""
+        ev = dict(event)
+        ev["is_replayed"] = 1
+        return ev
