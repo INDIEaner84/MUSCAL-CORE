@@ -14,7 +14,10 @@ from reconciliation.report import ReportGenerator
 
 REPO_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".."))
 
-EXPECTED_TOTAL = 94
+# Recalibrated 2026-08-01 (G2 adjudication, FL-01b): wave commits (PA-01/PA-02)
+# added ~575 files -> import_validator_scanner counts rose 36 -> 412.
+# Verified: 3 consecutive runner executions, TOTAL=470 (stable), baseline cdaa1c2..HEAD.
+EXPECTED_TOTAL = 470
 EXPECTED_SCANNERS = [
     "broken_link_scanner",
     "adr_validator_scanner",
@@ -25,7 +28,7 @@ EXPECTED_SCANNERS = [
 EXPECTED_BY_SCANNER = {
     "broken_link_scanner": 14,
     "adr_validator_scanner": 5,
-    "import_validator_scanner": 36,
+    "import_validator_scanner": 412,
     "drift_detector_scanner": 3,
     "rfc_validator_scanner": 36,
 }
