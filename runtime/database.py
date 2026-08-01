@@ -48,6 +48,7 @@ def init_db(db_path: Optional[Path] = None) -> None:
 
     _run(conn, "CREATE TABLE IF NOT EXISTS sequences (name TEXT PRIMARY KEY, value INTEGER NOT NULL DEFAULT 0)")
     _run(conn, "INSERT OR IGNORE INTO sequences (name, value) VALUES ('events', 0)")
+    _run(conn, "INSERT OR IGNORE INTO sequences (name, value) VALUES ('decisions', 0)")
 
     _run(conn, """CREATE TABLE IF NOT EXISTS events (
         id INTEGER PRIMARY KEY AUTOINCREMENT, seq INTEGER NOT NULL UNIQUE,
@@ -96,6 +97,31 @@ def init_db(db_path: Optional[Path] = None) -> None:
     )""")
     _run(conn, "CREATE INDEX IF NOT EXISTS idx_decisions_task ON decisions(task_id)")
     _run(conn, "CREATE INDEX IF NOT EXISTS idx_decisions_time ON decisions(made_at)")
+
+    for col_name, col_def in [
+        ("trace_id", "trace_id TEXT"),
+        ("span_id", "span_id TEXT"),
+        ("decision_type", "decision_type TEXT NOT NULL DEFAULT 'governance'"),
+        ("decision_status", "decision_status TEXT NOT NULL DEFAULT 'active'"),
+        ("governance_action", "governance_action TEXT"),
+        ("parent_decision_id", "parent_decision_id TEXT REFERENCES decisions(id)"),
+    ]:
+        if not _table_has_column(conn, "decisions", col_name):
+            try:
+                conn.execute(f"ALTER TABLE decisions ADD COLUMN {col_def}")
+                log.info("Migration: %s column added to decisions", col_name)
+            except Exception as e:
+                log.warning("Migration failed (non-critical): %s", e)
+
+    for idx_name, idx_col in [
+        ("idx_decisions_trace", "trace_id"),
+        ("idx_decisions_span", "span_id"),
+        ("idx_decisions_status", "decision_status"),
+    ]:
+        try:
+            conn.execute(f"CREATE INDEX IF NOT EXISTS {idx_name} ON decisions({idx_col})")
+        except Exception as e:
+            log.warning("Index creation failed (non-critical): %s", e)
 
     _run(conn, """CREATE TABLE IF NOT EXISTS intent_documents (
         id TEXT PRIMARY KEY, title TEXT, proceed INTEGER NOT NULL DEFAULT 0,
@@ -147,12 +173,269 @@ def init_db(db_path: Optional[Path] = None) -> None:
     )""")
     _run(conn, "INSERT OR IGNORE INTO schema_version (version, description) VALUES (1, 'ADR-010: unified muscal.db')")
 
+    _run(conn, """CREATE TABLE IF NOT EXISTS validation_artifacts (
+        validation_id TEXT PRIMARY KEY,
+        evaluation_id TEXT NOT NULL,
+        execution_id TEXT NOT NULL,
+        trace_id TEXT NOT NULL DEFAULT '',
+        span_id TEXT NOT NULL DEFAULT '',
+        decision_id TEXT NOT NULL DEFAULT '',
+        agent_id TEXT NOT NULL DEFAULT '',
+        model_id TEXT NOT NULL DEFAULT '',
+        outcome_id TEXT NOT NULL DEFAULT '',
+        validation_result TEXT NOT NULL DEFAULT 'INCONCLUSIVE',
+        evidence_status TEXT NOT NULL DEFAULT 'MISSING',
+        rationale TEXT NOT NULL DEFAULT '',
+        integrity_hash TEXT NOT NULL DEFAULT '',
+        created_at REAL NOT NULL DEFAULT 0,
+        finalized INTEGER NOT NULL DEFAULT 0
+    )""")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_valart_ev ON validation_artifacts(evaluation_id)")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_valart_exec ON validation_artifacts(execution_id)")
+
     if not _table_has_column(conn, "workers", "started_at"):
         try:
             conn.execute("ALTER TABLE workers ADD COLUMN started_at TEXT")
             log.info("Migration: started_at column added to workers")
         except Exception as e:
             log.warning("Migration failed (non-critical): %s", e)
+
+    # MCPL tables (MC-006)
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_intents (
+        intent_id TEXT PRIMARY KEY,
+        description TEXT,
+        created_at TEXT,
+        correlation_id TEXT,
+        causation_id TEXT,
+        tenant_id TEXT,
+        status TEXT DEFAULT 'created',
+        metadata TEXT DEFAULT '{}'
+    )""")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_tasks (
+        task_id TEXT PRIMARY KEY,
+        intent_id TEXT,
+        description TEXT,
+        created_at TEXT,
+        correlation_id TEXT,
+        causation_id TEXT,
+        tenant_id TEXT,
+        status TEXT DEFAULT 'created',
+        agent_id TEXT,
+        join_id TEXT,
+        metadata TEXT DEFAULT '{}',
+        FOREIGN KEY (intent_id) REFERENCES mcpl_intents(intent_id)
+    )""")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_tasks_intent ON mcpl_tasks(intent_id)")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_agents (
+        agent_id TEXT PRIMARY KEY,
+        name TEXT,
+        version TEXT DEFAULT '1.0.0',
+        agent_type TEXT DEFAULT 'llm',
+        created_at TEXT,
+        tenant_id TEXT
+    )""")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_models (
+        model_id TEXT PRIMARY KEY,
+        provider TEXT,
+        model_name TEXT,
+        model_version TEXT DEFAULT '',
+        created_at TEXT,
+        temperature REAL DEFAULT 0.0,
+        top_p REAL DEFAULT 1.0,
+        seed INTEGER,
+        sampling_parameters TEXT DEFAULT '{}',
+        system_prompt_hash TEXT DEFAULT '',
+        runtime_environment TEXT DEFAULT '{}',
+        tool_versions TEXT DEFAULT '{}'
+    )""")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_model_outputs (
+        output_id TEXT PRIMARY KEY,
+        model_id TEXT,
+        agent_id TEXT,
+        prompt_hash TEXT DEFAULT '',
+        input_artifact_hashes TEXT DEFAULT '[]',
+        retrieved_context_refs TEXT DEFAULT '[]',
+        knowledge_snapshot TEXT DEFAULT '',
+        candidates TEXT DEFAULT '[]',
+        raw_output TEXT DEFAULT '',
+        output_hash TEXT DEFAULT '',
+        created_at TEXT,
+        correlation_id TEXT,
+        causation_id TEXT,
+        tenant_id TEXT,
+        metadata TEXT DEFAULT '{}'
+    )""")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_decisions (
+        decision_id TEXT PRIMARY KEY,
+        decision_type TEXT,
+        task_id TEXT,
+        agent_id TEXT,
+        created_at TEXT,
+        correlation_id TEXT,
+        causation_id TEXT,
+        tenant_id TEXT,
+        status TEXT DEFAULT 'active',
+        reasoning TEXT DEFAULT '',
+        confidence REAL DEFAULT 0.0,
+        model_output_id TEXT DEFAULT '',
+        parent_decision_id TEXT DEFAULT '',
+        candidates TEXT DEFAULT '[]',
+        selected TEXT DEFAULT '',
+        selection_rationale TEXT DEFAULT '',
+        policy_id TEXT DEFAULT '',
+        policy_version TEXT DEFAULT '',
+        match_result TEXT DEFAULT '',
+        human_action TEXT DEFAULT '',
+        human_id TEXT DEFAULT '',
+        automated_decision_id TEXT DEFAULT '',
+        rationale TEXT DEFAULT ''
+    )""")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_decisions_task ON mcpl_decisions(task_id)")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_executions (
+        execution_id TEXT PRIMARY KEY,
+        task_id TEXT,
+        tool_name TEXT,
+        created_at TEXT,
+        correlation_id TEXT,
+        causation_id TEXT,
+        tenant_id TEXT,
+        status TEXT DEFAULT 'requested',
+        authorization_id TEXT DEFAULT '',
+        decision_id TEXT DEFAULT '',
+        attempt_count INTEGER DEFAULT 0,
+        replay_of TEXT DEFAULT '',
+        replay_classification TEXT DEFAULT '',
+        metadata TEXT DEFAULT '{}',
+        FOREIGN KEY (task_id) REFERENCES mcpl_tasks(task_id)
+    )""")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_executions_task ON mcpl_executions(task_id)")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_attempts (
+        attempt_id TEXT PRIMARY KEY,
+        execution_id TEXT,
+        attempt_number INTEGER,
+        created_at TEXT,
+        started_at TEXT DEFAULT '',
+        completed_at TEXT DEFAULT '',
+        status TEXT DEFAULT 'started',
+        error TEXT DEFAULT '',
+        error_type TEXT DEFAULT '',
+        duration_ms REAL DEFAULT 0.0,
+        result_hash TEXT DEFAULT '',
+        receipt_id TEXT DEFAULT '',
+        tenant_id TEXT,
+        FOREIGN KEY (execution_id) REFERENCES mcpl_executions(execution_id)
+    )""")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_attempts_execution ON mcpl_attempts(execution_id)")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_tool_calls (
+        tool_call_id TEXT PRIMARY KEY,
+        execution_id TEXT,
+        attempt_id TEXT DEFAULT '',
+        tool_name TEXT DEFAULT '',
+        args_hash TEXT DEFAULT '',
+        result_hash TEXT DEFAULT '',
+        success INTEGER DEFAULT 0,
+        duration_ms REAL DEFAULT 0.0,
+        created_at TEXT,
+        correlation_id TEXT DEFAULT '',
+        causation_id TEXT DEFAULT '',
+        tenant_id TEXT DEFAULT '',
+        receipt_id TEXT DEFAULT '',
+        integrity_hash TEXT DEFAULT ''
+    )""")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_artifacts (
+        artifact_id TEXT PRIMARY KEY,
+        name TEXT,
+        artifact_type TEXT,
+        content_hash TEXT,
+        content_ref TEXT DEFAULT '',
+        mime_type TEXT DEFAULT '',
+        size_bytes INTEGER DEFAULT 0,
+        created_at TEXT,
+        tool_call_id TEXT DEFAULT '',
+        execution_id TEXT DEFAULT '',
+        tenant_id TEXT DEFAULT '',
+        metadata TEXT DEFAULT '{}'
+    )""")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_artifacts_execution ON mcpl_artifacts(execution_id)")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_states (
+        state_id TEXT PRIMARY KEY,
+        artifact_id TEXT,
+        state_type TEXT,
+        previous_hash TEXT DEFAULT '',
+        current_hash TEXT DEFAULT '',
+        scope TEXT DEFAULT '',
+        created_at TEXT,
+        execution_id TEXT DEFAULT '',
+        tenant_id TEXT DEFAULT '',
+        metadata TEXT DEFAULT '{}'
+    )""")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_verifications (
+        verification_id TEXT PRIMARY KEY,
+        subject_id TEXT,
+        subject_type TEXT,
+        verifier_type TEXT,
+        verifier_id TEXT DEFAULT '',
+        method TEXT DEFAULT '',
+        expected_condition TEXT DEFAULT '{}',
+        observed_result TEXT DEFAULT '{}',
+        status TEXT DEFAULT 'requested',
+        confidence REAL DEFAULT 0.0,
+        evidence_ref TEXT DEFAULT '',
+        created_at TEXT,
+        verified_at TEXT DEFAULT '',
+        correlation_id TEXT DEFAULT '',
+        causation_id TEXT DEFAULT '',
+        tenant_id TEXT DEFAULT '',
+        decision_id TEXT DEFAULT ''
+    )""")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_verifications_subject ON mcpl_verifications(subject_id)")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_joins (
+        join_id TEXT PRIMARY KEY,
+        intent_id TEXT,
+        condition TEXT DEFAULT 'all',
+        required_count INTEGER DEFAULT 0,
+        timeout_ms INTEGER DEFAULT 0,
+        branch_ids TEXT DEFAULT '[]',
+        completed_branches TEXT DEFAULT '[]',
+        status TEXT DEFAULT 'pending',
+        created_at TEXT,
+        tenant_id TEXT DEFAULT '',
+        metadata TEXT DEFAULT '{}'
+    )""")
+
+    _run(conn, """CREATE TABLE IF NOT EXISTS mcpl_provenance_events (
+        event_id TEXT PRIMARY KEY,
+        schema_version TEXT DEFAULT '1.0.0',
+        parent_id TEXT DEFAULT '',
+        causation_id TEXT DEFAULT '',
+        correlation_id TEXT DEFAULT '',
+        event_type TEXT,
+        timestamp TEXT,
+        tenant_id TEXT DEFAULT '',
+        actor TEXT DEFAULT '{}',
+        subject TEXT DEFAULT '{}',
+        causal_links TEXT DEFAULT '[]',
+        payload TEXT DEFAULT '{}',
+        integrity TEXT DEFAULT '{}',
+        retention TEXT DEFAULT '{}'
+    )""")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_events_type ON mcpl_provenance_events(event_type)")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_events_correlation ON mcpl_provenance_events(correlation_id)")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_events_causation ON mcpl_provenance_events(causation_id)")
+    _run(conn, "CREATE INDEX IF NOT EXISTS idx_mcpl_events_timestamp ON mcpl_provenance_events(timestamp)")
+
     conn.commit()
     conn.close()
     log.info("DB initialized: %s", db_path)

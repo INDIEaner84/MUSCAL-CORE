@@ -4,6 +4,7 @@ import queue
 import sqlite3
 import threading
 import time
+import uuid
 from concurrent.futures import Future
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -17,6 +18,11 @@ log = logging.getLogger("muscal.writer")
 
 WRITER_TIMEOUT = 5.0
 _snapshot_mgr = None
+
+_SEVERITY_TO_PRIORITY = {
+    "debug": "LOW", "info": "NORMAL",
+    "warn": "HIGH", "error": "CRITICAL", "critical": "CRITICAL",
+}
 
 
 def set_snapshot_manager(mgr: Any) -> None:
@@ -36,9 +42,13 @@ class WriteCommand:
 
 
 class WriterThread(threading.Thread):
-    def __init__(self, db_path: Path = config.DB_PATH):
+    """Compatibility adapter: delegates canonical persistence to EventStore,
+    then writes a derived copy to the `events` table for legacy readers."""
+
+    def __init__(self, db_path: Path = config.DB_PATH, event_store=None):
         super().__init__(name="muscal-writer", daemon=True)
         self.db_path = db_path
+        self.event_store = event_store
         self._queue: queue.Queue[Optional[WriteCommand]] = queue.Queue()
         self._stopevent = threading.Event()
         self._event_count_since_snapshot = 0
@@ -68,10 +78,48 @@ class WriterThread(threading.Thread):
             log.error("WriterThread error: %s", exc)
             cmd.future.set_exception(exc)
 
+    @staticmethod
+    def _map_to_stored_event(ev: dict) -> dict:
+        caused_by = ev.get("caused_by", [])
+        if isinstance(caused_by, list):
+            causation_id = caused_by[0] if caused_by else ""
+        else:
+            causation_id = str(caused_by)
+        severity = ev.get("severity", "info")
+        priority = _SEVERITY_TO_PRIORITY.get(severity, "NORMAL")
+        return {
+            "topic": ev.get("type", ev.get("topic", "unknown")),
+            "payload": ev.get("payload", {}),
+            "source": ev.get("actor", "kernel"),
+            "priority": priority,
+            "timestamp": time.time(),
+            "id": ev.get("idempotency_key", str(uuid.uuid4())),
+            "execution_id": ev.get("execution_id", ""),
+            "correlation_id": ev.get("correlation_id", ""),
+            "causation_id": causation_id,
+            "execution_mode": ev.get("execution_mode", "real"),
+            "execution_state": ev.get("execution_state", "planned"),
+            "verification_state": ev.get("verification_state", "unverified"),
+        }
+
     def _write_atomic(self, cmd: WriteCommand) -> dict:
         conn = self._conn
         ev = cmd.event
         now = datetime.now(timezone.utc).isoformat()
+
+        # CANONICAL: persist to EventStore first (separate connection, own transaction)
+        if self.event_store is not None:
+            mapped = self._map_to_stored_event(ev)
+            try:
+                self.event_store.append(mapped)
+            except sqlite3.IntegrityError:
+                # Duplicate event_id — log and fall through to idempotency check
+                log.warning("EventStore duplicate event_id (may be idempotent retry)")
+            except Exception as exc:
+                log.error("EventStore canonical write failed: %s", exc)
+                raise
+
+        # DERIVED: legacy events-table write inside its own transaction
         conn.execute("BEGIN IMMEDIATE")
         try:
             seq = _next_seq(conn)

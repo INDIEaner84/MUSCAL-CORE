@@ -10,6 +10,7 @@ log = logging.getLogger("muscal.main")
 def main() -> None:
     from runtime.api import init_app, register_blueprints, set_globals, set_server_ready
     from runtime.database import check_consistency_on_start, init_db
+    from runtime.event_store import EventStore
     from runtime.kernel.bootstrap import bootstrap_kernel, detect_bootstrap_needed
     from runtime.kernel.governance import GovernanceSync
     from runtime.kernel.scheduler import RoutingPolicy
@@ -24,7 +25,8 @@ def main() -> None:
     init_db(config.DB_PATH)
     check_consistency_on_start(config.DB_PATH)
 
-    writer = WriterThread(config.DB_PATH)
+    event_store = EventStore(config.DB_PATH)
+    writer = WriterThread(config.DB_PATH, event_store=event_store)
     writer.start()
 
     if detect_bootstrap_needed(config.DB_PATH):
