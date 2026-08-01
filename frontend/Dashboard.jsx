@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import NodePanel from "./NodePanel";
 import TraceViewer from "./TraceViewer";
 import TaskBox from "./TaskBox";
+import SuplApp from "./SuplApp";
 
 export default function Dashboard() {
   const [nodes, setNodes] = useState([]);
@@ -22,6 +23,8 @@ export default function Dashboard() {
   return (
     <div>
       <h1>MUSCAL Control Plane</h1>
+
+      <SuplApp />
 
       <h2>Nodes</h2>
       <NodePanel nodes={nodes} />
