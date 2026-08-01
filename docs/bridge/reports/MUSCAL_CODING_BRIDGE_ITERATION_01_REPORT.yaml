@@ -1,0 +1,51 @@
+schema_version: 1
+
+project:
+  id: muscal-core
+  root: /home/hz/AlitaProject/Codebase/MUSCAL CORE
+  repository: single-local-git
+  branch: main
+  commit: cdaa1c29e18417af78ad180a2f652cbfa7c0dff4
+
+runtime:
+  status: active
+  authority: git
+  entrypoint: main.py
+
+opencode:
+  detected: true
+  version: 1.18.7
+  session_capability: verified
+  active_session: ses_057aff2b9ffeMAfE82Y86FCPkw
+  integration_mode: cli-adapter
+
+continuity:
+  project:
+    status: partial
+    canonical: docs/PROJECT_STATE.md
+    automation: manual
+  task:
+    status: partial
+    canonical: docs/governance/WORK_QUEUE.md
+    automation: manual
+  session:
+    status: verified
+    canonical: docs/governance/SESSION_REGISTRY.md + OpenCode CLI
+    automation: semi-automated
+  decision:
+    status: verified
+    canonical: spec/ADR-*.md + spec/ADRs/
+    automation: manual
+  knowledge:
+    status: partial
+    canonical: multiple (memory, graph_memory, rag, EventStore)
+    automation: semi-automated
+
+bridge:
+  status: not-implemented
+  next_capability: project-scanner
+  blocking_gaps:
+    - opencode-adapter
+    - result-normalizer
+
+updated_at: 2026-07-28T12:41:00Z

@@ -1,0 +1,28 @@
+# MUSCAL Coding Bridge — Derived Runtime State
+# This is a DERIVED VIEW, not an independent authority.
+# Canonical authorities:
+#   - Git: source code
+#   - EventStore: event history
+#   - OpenCode: session state
+#   - ADRs: architecture decisions
+
+bridge_state_version: 1
+generated_at: null
+authority_note: >
+  This file is a convenience snapshot. For authoritative state,
+  consult the canonical sources listed above.
+
+project:
+  root: null
+  repository: null
+  branch: null
+  commit: null
+  dirty: null
+
+last_scan:
+  timestamp: null
+  status: null
+
+active_session: null
+
+event_cursor: null
