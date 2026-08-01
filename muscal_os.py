@@ -126,17 +126,31 @@ class MuscalOS:
         self.shutdown()
         return self.start()
 
-    def run(self, input_text: str) -> Dict[str, Any]:
+    def run(self, input_text: str, execution_mode: str = "", execution_context=None) -> Dict[str, Any]:
         if not self._running or self.kernel is None:
             return {"error": "OS not running", "success": False, "validation_status": "FAIL"}
-        sim = self.config.simulation_mode
 
-        self.trace.log("COMPUTE", "MKC_INPUT", {"input": input_text[:200]}, trace_level=1)
-        if sim:
-            self.events.publish("os.simulate", {"input": input_text},
+        from features.identity.execution_context import ExecutionContext, get_context_manager
+        from features.identity.reality import map_simulation_mode
+
+        if execution_context is None:
+            resolved_mode = execution_mode or self.config.execution_mode or map_simulation_mode(self.config.simulation_mode)
+            execution_context = ExecutionContext(
+                execution_mode=resolved_mode,
+                execution_state="running",
+            )
+        else:
+            resolved_mode = execution_context.execution_mode
+        ctx = execution_context
+        get_context_manager().set_context(ctx)
+
+        self.trace.log("COMPUTE", "MKC_INPUT", {"input": input_text[:200], "execution_id": ctx.execution_id}, trace_level=1)
+
+        if resolved_mode == "simulated":
+            self.events.publish("os.simulate", {"input": input_text, "execution_id": ctx.execution_id},
                                 source="muscal_os")
 
-        result = self.kernel.run(input_text)
+        result = self.kernel.run(input_text, execution_context=ctx)
 
         if result.success and result.mcxf is not None:
             mcxf_current = {
@@ -175,6 +189,8 @@ class MuscalOS:
             "memory_id": result.memory_id,
             "validation": validation_status,
             "diff_recommendation": recommendation,
+            "execution_id": ctx.execution_id,
+            "execution_mode": resolved_mode,
         }, source="muscal_os")
 
         return {
@@ -214,7 +230,9 @@ class MuscalOS:
             "memory_id": result.memory_id,
             "feedback": result.feedback.summary,
             "errors": result.errors,
-            "simulation": sim,
+            "execution_id": result.execution_id if hasattr(result, "execution_id") else ctx.execution_id,
+            "execution_mode": resolved_mode,
+            "simulation": resolved_mode == "simulated",
         }
 
     def get_status(self) -> Dict[str, Any]:
@@ -243,10 +261,26 @@ class MuscalOS:
                 self.boot.steps[-1].error = str(e)
             return False
 
+    def _extract_identity(self, payload):
+        """Extract identity fields from payload, supporting nested graph event format."""
+        if not isinstance(payload, dict):
+            return {}
+        inner = payload.get("payload") if isinstance(payload.get("payload"), dict) else {}
+        return {
+            "execution_id": payload.get("execution_id", "") or inner.get("execution_id", ""),
+            "correlation_id": payload.get("correlation_id", "") or inner.get("correlation_id", ""),
+            "causation_id": payload.get("causation_id", "") or inner.get("causation_id", ""),
+            "execution_mode": payload.get("execution_mode", "") or inner.get("execution_mode", "real"),
+            "execution_state": payload.get("execution_state", "") or inner.get("execution_state", "planned"),
+            "verification_state": (payload.get("verification_state", "")
+                                   or inner.get("verification_state", "unverified")),
+        }
+
     def _persist_to_store(self, msg) -> None:
         if self.event_store is None:
             return
         try:
+            identity = self._extract_identity(msg.payload or {})
             self.event_store.append({
                 "topic": msg.topic,
                 "payload": msg.payload,
@@ -254,6 +288,7 @@ class MuscalOS:
                 "priority": msg.priority,
                 "timestamp": msg.timestamp,
                 "id": msg.id,
+                **identity,
             })
         except Exception:
             pass
@@ -338,8 +373,9 @@ class MuscalOS:
             EVENT_EXECUTION_STARTED: "graph.execution_started",
             EVENT_EXECUTION_FINISHED: "graph.execution_finished",
         }
+        from features.identity.execution_context import enrich_with_context
         for graph_evt, bus_topic in event_map.items():
-            graph.on(graph_evt, lambda e, t=bus_topic: self.events.publish(t, e, source="graph"))
+            graph.on(graph_evt, lambda e, t=bus_topic: self.events.publish(t, enrich_with_context(e), source="graph"))
 
         # ── EventBus → Graph bridge (Phase 2, ADR-003) ──────────────
         self.events.subscribe("*", self._bridge_to_graph)

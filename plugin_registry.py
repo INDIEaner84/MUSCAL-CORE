@@ -25,6 +25,25 @@ HOOKS = {
     "memory_after": [],
 }
 
+PLUGIN_CAPABILITIES: dict[int, set] = {}
+
+CAPABILITY_MAP = {
+    "kernel_before": {"ctx_read", "input_read", "kernel_access"},
+    "kernel_after": {"ctx_read", "result_read", "kernel_access"},
+    "mkc_before": {"input_read", "ctx_read", "kernel_access"},
+    "mkc_after": {"ctx_read", "kernel_access"},
+    "bridge_before": {"input_read", "ctx_read", "kernel_access"},
+    "bridge_after": {"ctx_read", "kernel_access"},
+    "optimizer_before": {"plan_read", "ctx_read"},
+    "optimizer_after": {"ctx_read"},
+    "mel_before": {"plan_read", "ctx_read"},
+    "mel_after": {"result_read", "ctx_read"},
+    "feedback_before": {"result_read", "ctx_read"},
+    "feedback_after": {"ctx_read"},
+    "memory_before": {"result_read", "ctx_read"},
+    "memory_after": {"ctx_read"},
+}
+
 _reg_index = 0
 
 STAGES: dict[str, dict] = {}
@@ -87,6 +106,35 @@ def _sorted_callables(name: str) -> list:
     return [fn for _, _, fn in items]
 
 
+def register_plugin_capability(fn, capabilities: set):
+    PLUGIN_CAPABILITIES[id(fn)] = capabilities
+
+
+def _restrict_ctx_for_plugin(fn, ctx: dict, hook_name: str) -> dict:
+    if id(fn) in PLUGIN_CAPABILITIES:
+        caps = PLUGIN_CAPABILITIES[id(fn)]
+    else:
+        caps = CAPABILITY_MAP.get(hook_name, set())
+    scoped = {}
+    for k, v in ctx.items():
+        if k.startswith("_"):
+            scoped[k] = v
+        elif k == "input_text" and "input_read" in caps:
+            scoped[k] = v
+        elif k == "kernel" and "kernel_access" in caps:
+            scoped[k] = v
+        elif k in ("mcxf", "mel_result", "feedback", "execution_plan") and "result_read" in caps:
+            scoped[k] = v
+        elif k in ("execution_plan", "optimized_plan") and "plan_read" in caps:
+            scoped[k] = v
+        elif k == "mem_id" and "result_read" in caps:
+            scoped[k] = v
+        elif k not in ("kernel", "input_text", "mcxf", "mel_result", "feedback", "execution_plan", "optimized_plan", "mem_id"):
+            scoped[k] = v
+    scoped["_capability_scope"] = caps
+    return scoped
+
+
 class _PluginTimeout(Exception):
     pass
 
@@ -103,7 +151,8 @@ def run_hooks(name: str, ctx: dict):
             if _HAS_SIGALRM:
                 _signal.signal(_signal.SIGALRM, _timeout_handler)
                 _signal.alarm(_PLUGIN_TIMEOUT_SECONDS)
-            fn(ctx)
+            scoped_ctx = _restrict_ctx_for_plugin(fn, ctx, name)
+            fn(scoped_ctx)
         except _PluginTimeout:
             _traceback.print_exc()
             if fn in HOOKS[name]:

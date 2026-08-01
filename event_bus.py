@@ -43,12 +43,13 @@ class EventBus:
     def publish(self, topic: str, payload: Optional[Dict[str, Any]] = None, source: str = "",
                 priority: EventPriority = EventPriority.NORMAL) -> EventMessage:
         with self._lock:
+            from features.identity.uuid7 import uuid7
             msg = EventMessage(
                 topic=topic,
                 payload=copy.deepcopy(payload) if payload else {},
                 source=source,
                 priority=priority,
-                id=f"{topic}_{len(self._history)}_{int(time.time() * 1000)}"
+                id=uuid7()
             )
             self._history.append(msg)
             if len(self._history) > self._max_history:
@@ -79,6 +80,15 @@ class EventBus:
         with self._lock:
             if topic in self._subscribers:
                 self._subscribers[topic] = [cb for cb in self._subscribers[topic] if cb != callback]
+
+    def swap_subscriber(self, topic: str, remove: Callable, add: Callable) -> None:
+        """Atomically replace one subscriber with another — no event-loss window."""
+        with self._lock:
+            if topic in self._subscribers:
+                self._subscribers[topic] = [
+                    cb for cb in self._subscribers[topic] if cb != remove
+                ]
+            self._subscribers.setdefault(topic, []).append(add)
 
     def get_history(self, topic: Optional[str] = None, limit: int = 10) -> List[EventMessage]:
         with self._lock:

@@ -59,7 +59,8 @@ class GraphState:
     # ── Node Management ──────────────────────────────────────────────
 
     def add_node(self, node_type: str, payload: dict,
-                 confidence: float = 1.0, status: str = "created") -> str:
+                 confidence: float = 1.0, status: str = "created",
+                 execution_id: str = "") -> str:
         with self._lock:
             self._node_counter += 1
             node_id = f"{node_type.lower()}_{self._node_counter}"
@@ -69,14 +70,16 @@ class GraphState:
                 payload=payload,
                 timestamp=time.time(),
                 confidence=confidence,
-                status=status
+                status=status,
+                execution_id=execution_id
             )
             self.nodes[node_id] = node
         self._push_event(EVENT_NODE_CREATED, {
             "node_id": node_id,
             "type": node_type,
             "payload": payload,
-            "timestamp": node.timestamp
+            "timestamp": node.timestamp,
+            "execution_id": execution_id
         })
         with self._lock:
             if not self.active_focus_node:
@@ -96,10 +99,12 @@ class GraphState:
                 node.confidence = confidence
             if payload is not None:
                 node.payload.update(payload)
+            execution_id = node.execution_id
         self._push_event(EVENT_NODE_UPDATED, {
             "node_id": node_id,
             "status": node.status,
-            "confidence": node.confidence
+            "confidence": node.confidence,
+            "execution_id": execution_id
         })
 
     # ── Edge Management ──────────────────────────────────────────────
@@ -227,8 +232,11 @@ class GraphState:
         with self._lock:
             self._dispatch_depth -= 1
 
-    def emit(self, event_type: str, payload: dict):
-        self._push_event(event_type, payload)
+    def emit(self, event_type: str, payload: dict, execution_id: str = ""):
+        enhanced = dict(payload)
+        if execution_id:
+            enhanced["execution_id"] = execution_id
+        self._push_event(event_type, enhanced)
 
     def get_event_stream(self, limit: int = 50) -> list:
         with self._lock:
@@ -252,7 +260,8 @@ class GraphState:
                     "payload": n.payload,
                     "timestamp": n.timestamp,
                     "confidence": n.confidence,
-                    "status": n.status
+                    "status": n.status,
+                    "execution_id": n.execution_id
                 }
                 for n in self.nodes.values()
             ],

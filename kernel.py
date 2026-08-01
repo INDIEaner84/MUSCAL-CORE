@@ -19,6 +19,7 @@ Integration wiring:
                              + SYSTEM_ACTION
 """
 
+import os
 import time
 
 from bridge import map_tasks, validate_plan
@@ -191,6 +192,7 @@ class MuscalKernel:
                 self.graph.on(evt, lambda e: self.system.on_action_event(e))
 
         self.memory.init()
+        self._register_pipeline_stages()
 
     def _mcxf_dict_to_document(self, mcxf_dict: dict, input_text: str) -> MCXFDocument:
         return dict_to_mcxf_document(mcxf_dict, input_text=input_text)
@@ -219,26 +221,13 @@ class MuscalKernel:
             for r in mel_results
         )
 
-    def run(self, input_text: str):
+    def stage_rag(self, input_text, ctx):
         g = self.graph
         d = self.debugger
-
-        if g and len(g.nodes) > 10000:
-            g.prune_graph()
-
-        if d:
-            d.start_execution(input_text)
-
-        if g:
-            g.emit(EVENT_EXECUTION_STARTED, {"input": input_text, "timestamp": time.time()})
-
-        _ctx = {"input_text": input_text, "kernel": self}
-        run_hooks("kernel_before", _ctx)
-        _errors = []
-        _stage_metrics = {}
-
-        # 1. RAG context retrieval + enrichment
+        _eid = ctx.get("execution_id", "")
         _stage_start = time.time()
+        _errors = ctx.setdefault("_errors", [])
+        _stage_metrics = ctx.setdefault("_stage_metrics", {})
         try:
             if d:
                 d.stage_enter("rag_inject", {"input": input_text})
@@ -252,32 +241,41 @@ class MuscalKernel:
                 d.wait_for_step()
             intent_id = ""
             if g:
-                intent_id = g.add_node(NODE_TYPE_INTENT, {"text": input_text})
-                for ctx in context:
+                intent_id = g.add_node(NODE_TYPE_INTENT, {"text": input_text}, execution_id=_eid)
+                for c in context:
                     rag_id = g.add_node(NODE_TYPE_RAG_CONTEXT, {
-                        "memory_id": ctx.get("id"),
-                        "input_text": ctx.get("input_text", "")
-                    })
+                        "memory_id": c.get("id"),
+                        "input_text": c.get("input_text", "")
+                    }, execution_id=_eid)
                     g.add_edge(rag_id, intent_id, EDGE_TYPE_RETRIEVES_FROM)
         except Exception as exc:
             _errors.append(f"[RAG] {exc}")
             context = []
             enriched_input = input_text
             intent_id = ""
+        ctx["context"] = context
+        ctx["enriched_input"] = enriched_input
+        ctx["intent_id"] = intent_id
         _stage_metrics["rag"] = round((time.time() - _stage_start) * 1000, 2)
+        return context, enriched_input, intent_id
 
-        # 2. MKC compile → MCXF dict (single source of truth)
+    def stage_mkc(self, input_text, enriched_input, intent_id, ctx):
+        g = self.graph
+        d = self.debugger
+        _eid = ctx.get("execution_id", "")
         _stage_start = time.time()
+        _errors = ctx.setdefault("_errors", [])
+        _stage_metrics = ctx.setdefault("_stage_metrics", {})
         try:
             if d:
                 d.stage_enter("mkc_classify", {"input": enriched_input, "raw": input_text})
-            _ctx["enriched_input"] = enriched_input
-            run_hooks("mkc_before", _ctx)
+            ctx["enriched_input"] = enriched_input
+            run_hooks("mkc_before", ctx)
             mcxf_dict = self.mkc.compile(enriched_input, raw_input=input_text)
             mcxf = self._mcxf_dict_to_document(mcxf_dict, input_text)
-            _ctx["mcxf_dict"] = mcxf_dict
-            _ctx["mcxf"] = mcxf
-            run_hooks("mkc_after", _ctx)
+            ctx["mcxf_dict"] = mcxf_dict
+            ctx["mcxf"] = mcxf
+            run_hooks("mkc_after", ctx)
             if d:
                 d.stage_exit("mkc_classify", {
                     "decisions": len(mcxf_dict.get("decisions", [])),
@@ -289,12 +287,12 @@ class MuscalKernel:
                     step_id = g.add_node(NODE_TYPE_MKC_STEP, {
                         "predicate": task.get("predicate", ""),
                         "object": task.get("object", ""),
-                    })
+                    }, execution_id=_eid)
                     g.add_edge(intent_id, step_id, EDGE_TYPE_DERIVES_FROM)
         except Exception as exc:
             _errors.append(f"[MKC] {exc}")
-            run_hooks("kernel_after", _ctx)
-            run_hooks("memory_after", _ctx)
+            run_hooks("kernel_after", ctx)
+            run_hooks("memory_after", ctx)
             if d:
                 d.finish_execution()
             r = KernelResult(
@@ -304,11 +302,21 @@ class MuscalKernel:
                 execution_plan=ExecutionPlan(intent="", steps=[]),
             )
             r.stage_metrics = _stage_metrics
-            return r
+            ctx["_early_result"] = r
+            ctx["_mkc_early_exit"] = True
+            ctx["_early_exit"] = True
+            _stage_metrics["mkc"] = round((time.time() - _stage_start) * 1000, 2)
+            return None, None
         _stage_metrics["mkc"] = round((time.time() - _stage_start) * 1000, 2)
+        return mcxf_dict, mcxf
 
-        # 3. MCXF document section node
+    def stage_mcxf_section(self, mcxf, intent_id, ctx):
+        g = self.graph
+        d = self.debugger
+        _eid = ctx.get("execution_id", "")
         _stage_start = time.time()
+        _errors = ctx.setdefault("_errors", [])
+        _stage_metrics = ctx.setdefault("_stage_metrics", {})
         try:
             if d:
                 d.stage_enter("mcxf_build", {"task_count": len(mcxf.tasks)})
@@ -319,28 +327,37 @@ class MuscalKernel:
                 section_id = g.add_node(NODE_TYPE_MCXF_SECTION, {
                     "section_count": len(mcxf.tasks),
                     "tasks": [f"{t.predicate} {t.object}" for t in mcxf.tasks]
-                })
+                }, execution_id=_eid)
                 g.add_edge(intent_id, section_id, EDGE_TYPE_DERIVES_FROM)
         except Exception as exc:
             _errors.append(f"[MCXF] {exc}")
             section_id = ""
+        ctx["section_id"] = section_id
         _stage_metrics["mcxf"] = round((time.time() - _stage_start) * 1000, 2)
+        return section_id
 
-        # 4. Bridge: MCXF → ExecutionPlan
+    def stage_bridge(self, mcxf, input_text, section_id, mcxf_dict, ctx):
+        g = self.graph
+        d = self.debugger
+        _eid = ctx.get("execution_id", "")
         _stage_start = time.time()
+        _errors = ctx.setdefault("_errors", [])
+        _stage_metrics = ctx.setdefault("_stage_metrics", {})
         validation = None
         execution_plan = None
         plan_id = ""
+        bridge_mem = None
+        bridge_errs = []
         try:
             if d:
                 d.stage_enter("bridge_exec", {"task_count": len(mcxf.tasks)})
-            _ctx["mcxf"] = mcxf
-            run_hooks("bridge_before", _ctx)
+            ctx["mcxf"] = mcxf
+            run_hooks("bridge_before", ctx)
             execution_plan = self.bridge.map_tasks(mcxf.tasks, intent=input_text)
             validation = self.bridge.validate(execution_plan)
-            _ctx["execution_plan"] = execution_plan
-            _ctx["validation"] = validation
-            run_hooks("bridge_after", _ctx)
+            ctx["execution_plan"] = execution_plan
+            ctx["validation"] = validation
+            run_hooks("bridge_after", ctx)
             if d:
                 d.stage_exit("bridge_exec", {
                     "intent": execution_plan.intent,
@@ -353,7 +370,7 @@ class MuscalKernel:
                     "intent": execution_plan.intent,
                     "step_count": len(execution_plan.steps),
                     "valid": validation.valid
-                })
+                }, execution_id=_eid)
                 g.add_edge(section_id, plan_id, EDGE_TYPE_DERIVES_FROM)
             if not validation.valid:
                 mem_id = self.memory.store_snapshot(input_text, mcxf, {"error": validation.errors})
@@ -370,12 +387,12 @@ class MuscalKernel:
                     mem_node = g.add_node(NODE_TYPE_MEMORY_ENTRY, {
                         "memory_id": mem_id,
                         "status": "error"
-                    })
+                    }, execution_id=_eid)
                     g.add_edge(plan_id, mem_node, EDGE_TYPE_DERIVES_FROM)
-                    g.emit(EVENT_EXECUTION_FINISHED, {"success": False, "memory_id": mem_id})
+                    g.emit(EVENT_EXECUTION_FINISHED, {"success": False, "memory_id": mem_id}, execution_id=_eid)
                 if d:
                     d.finish_execution()
-                run_hooks("kernel_after", _ctx)
+                run_hooks("kernel_after", ctx)
                 r = KernelResult(
                     mcxf=mcxf, execution=[], memory_id=mem_id,
                     feedback=FeedbackReport(), success=False,
@@ -383,25 +400,33 @@ class MuscalKernel:
                     execution_plan=execution_plan,
                 )
                 r.stage_metrics = _stage_metrics
-                return r
+                ctx["_early_result"] = r
+                ctx["_early_exit"] = True
+                bridge_mem = mem_id
+                bridge_errs = list(validation.errors)
         except Exception as exc:
             _errors.append(f"[Bridge] {exc}")
             execution_plan = ExecutionPlan(intent=input_text, steps=[])
-            _ctx["execution_plan"] = execution_plan
+            ctx["execution_plan"] = execution_plan
         _stage_metrics["bridge"] = round((time.time() - _stage_start) * 1000, 2)
+        return execution_plan, plan_id, bridge_mem, bridge_errs
 
-        # 5. Optimizer: ExecutionPlan → OptimizedPlan
+    def stage_optimizer(self, execution_plan, ctx):
+        g = self.graph
+        d = self.debugger
         _stage_start = time.time()
+        _errors = ctx.setdefault("_errors", [])
+        _stage_metrics = ctx.setdefault("_stage_metrics", {})
         try:
             if d:
                 d.stage_enter("graph_optimizer", {"step_count": len(execution_plan.steps)})
             from runtime.optimizer.pipeline import OptimizerPipeline
             _optimizer = OptimizerPipeline()
-            run_hooks("optimizer_before", _ctx)
+            run_hooks("optimizer_before", ctx)
             optimized_plan, opt_report = _optimizer.optimize(execution_plan)
-            _ctx["optimized_plan"] = optimized_plan
-            _ctx["opt_report"] = opt_report
-            run_hooks("optimizer_after", _ctx)
+            ctx["optimized_plan"] = optimized_plan
+            ctx["opt_report"] = opt_report
+            run_hooks("optimizer_after", ctx)
             if d:
                 d.stage_exit("graph_optimizer", {
                     "nodes_before": opt_report.node_count_before,
@@ -412,18 +437,24 @@ class MuscalKernel:
         except Exception as exc:
             _errors.append(f"[Optimizer] {exc}")
             optimized_plan = execution_plan
-            _ctx["optimized_plan"] = optimized_plan
+        ctx["optimized_plan"] = optimized_plan
         _stage_metrics["optimizer"] = round((time.time() - _stage_start) * 1000, 2)
+        return optimized_plan
 
-        # 6. MEL execute mit optimiertem Plan
+    def stage_mel(self, optimized_plan, execution_plan, plan_id, ctx):
+        g = self.graph
+        d = self.debugger
+        _eid = ctx.get("execution_id", "")
         _stage_start = time.time()
+        _errors = ctx.setdefault("_errors", [])
+        _stage_metrics = ctx.setdefault("_stage_metrics", {})
         try:
             if d:
                 d.stage_enter("mel_tool_call", {"step_count": len(optimized_plan.layers)})
-            run_hooks("mel_before", _ctx)
+            run_hooks("mel_before", ctx)
             mel_result = self.mel.execute(optimized_plan)
-            _ctx["mel_result"] = mel_result
-            run_hooks("mel_after", _ctx)
+            ctx["mel_result"] = mel_result
+            run_hooks("mel_after", ctx)
             if d:
                 for i, step_result in enumerate(mel_result):
                     tool_name = execution_plan.steps[i].get("tool", "unknown") if i < len(execution_plan.steps) else "unknown"
@@ -440,34 +471,40 @@ class MuscalKernel:
                     tool_name = execution_plan.steps[i].get("tool", "unknown") if i < len(execution_plan.steps) else "unknown"
                     is_system = tool_name.startswith("browser.") or tool_name.startswith("desktop.")
                     ntype = NODE_TYPE_SYSTEM_ACTION if is_system else NODE_TYPE_TOOL_EXECUTION
-                    exec_id = g.add_node(ntype, {
+                    node_id = g.add_node(ntype, {
                         "tool": tool_name,
                         "result": str(step_result)
-                    })
-                    g.add_edge(plan_id, exec_id, EDGE_TYPE_EXECUTES if not is_system else EDGE_TYPE_CONTROLS)
+                    }, execution_id=_eid)
+                    g.add_edge(plan_id, node_id, EDGE_TYPE_EXECUTES if not is_system else EDGE_TYPE_CONTROLS)
         except Exception as exc:
             _errors.append(f"[MEL] {exc}")
             mel_result = []
-            _ctx["mel_result"] = mel_result
+            ctx["mel_result"] = mel_result
         _stage_metrics["mel"] = round((time.time() - _stage_start) * 1000, 2)
+        return mel_result
 
-        # 7. Feedback analysis
+    def stage_feedback(self, mcxf, mel_result, execution_plan, plan_id, ctx):
+        g = self.graph
+        d = self.debugger
+        _eid = ctx.get("execution_id", "")
         _stage_start = time.time()
+        _errors = ctx.setdefault("_errors", [])
+        _stage_metrics = ctx.setdefault("_stage_metrics", {})
         try:
             exec_result = self._build_exec_result(mel_result)
-            _ctx["exec_result"] = exec_result
-            run_hooks("feedback_before", _ctx)
+            ctx["exec_result"] = exec_result
+            run_hooks("feedback_before", ctx)
             feedback = self.feedback.analyze(mcxf.tasks, exec_result, execution_plan)
             self.mkc.apply_feedback(feedback)
-            _ctx["feedback"] = feedback
-            run_hooks("feedback_after", _ctx)
+            ctx["feedback"] = feedback
+            run_hooks("feedback_after", ctx)
             if g and feedback.confidence_adjustments:
                 for section, delta in feedback.confidence_adjustments.items():
                     conf_id = g.add_node(NODE_TYPE_CONFLICT, {
                         "section": section,
                         "delta": delta,
                         "patterns": [f.description for f in feedback.failure_patterns]
-                    })
+                    }, execution_id=_eid)
                     g.add_edge(conf_id, plan_id, EDGE_TYPE_CONFLICTS_WITH)
             if d and feedback.confidence_adjustments:
                 for section, delta in feedback.confidence_adjustments.items():
@@ -479,13 +516,19 @@ class MuscalKernel:
         except Exception as exc:
             _errors.append(f"[Feedback] {exc}")
             feedback = FeedbackReport()
-            _ctx["feedback"] = feedback
+            ctx["feedback"] = feedback
         _stage_metrics["feedback"] = round((time.time() - _stage_start) * 1000, 2)
+        return feedback
 
-        # 8. Memory persist
+    def stage_memory(self, input_text, mcxf, mcxf_dict, mel_result, feedback, execution_plan, plan_id, ctx):
+        g = self.graph
+        d = self.debugger
+        _eid = ctx.get("execution_id", "")
         _stage_start = time.time()
+        _errors = ctx.setdefault("_errors", [])
+        _stage_metrics = ctx.setdefault("_stage_metrics", {})
         try:
-            run_hooks("memory_before", _ctx)
+            run_hooks("memory_before", ctx)
             mem_id = self.memory.store_snapshot(input_text, mcxf, mel_result, feedback)
             self.memory.log({
                 "input": input_text,
@@ -495,7 +538,7 @@ class MuscalKernel:
                 "feedback": {"summary": feedback.summary, "adjustments": feedback.confidence_adjustments},
                 "memory_id": mem_id
             })
-            _ctx["mem_id"] = mem_id
+            ctx["mem_id"] = mem_id
             if d:
                 d.emit_memory_write(mem_id)
             if g:
@@ -503,17 +546,151 @@ class MuscalKernel:
                     "memory_id": mem_id,
                     "status": "stored",
                     "success": self._is_success(mel_result)
-                })
+                }, execution_id=_eid)
                 g.add_edge(mem_node, plan_id, EDGE_TYPE_DERIVES_FROM)
                 g.set_focus(mem_node)
                 g.emit(EVENT_EXECUTION_FINISHED, {
                     "success": self._is_success(mel_result),
                     "memory_id": mem_id
-                })
+                }, execution_id=_eid)
         except Exception as exc:
             _errors.append(f"[Memory] {exc}")
             mem_id = None
         _stage_metrics["memory"] = round((time.time() - _stage_start) * 1000, 2)
+        return mem_id
+
+    def _register_pipeline_stages(self):
+        from features.pipeline.stages import (
+            RAGStage, MKCStage, MCXFStage, BridgeStage,
+            OptimizerStage, MELStage, FeedbackStage, MemoryStage
+        )
+        from features.pipeline.governance_stage import GovernanceStage
+        from features.pipeline.routing_stage import RoutingStage
+        from features.pipeline.cu_stage import CognitiveUnitStage
+        from plugin_registry import register_stage, build_pipeline
+        register_stage(GovernanceStage(self))
+        register_stage(RAGStage(self))
+        register_stage(MKCStage(self))
+        register_stage(RoutingStage(self))
+        register_stage(CognitiveUnitStage(self))
+        register_stage(MCXFStage(self))
+        register_stage(BridgeStage(self))
+        register_stage(OptimizerStage(self))
+        register_stage(MELStage(self))
+        register_stage(FeedbackStage(self))
+        register_stage(MemoryStage(self))
+        self._pipeline = build_pipeline()
+
+    def _run_pipeline(self, input_text):
+        g = self.graph
+        d = self.debugger
+
+        if g and len(g.nodes) > 10000:
+            g.prune_graph()
+
+        if d:
+            d.start_execution(input_text)
+
+        if g:
+            g.emit(EVENT_EXECUTION_STARTED, {"input": input_text, "timestamp": time.time()})
+
+        ctx = {"input_text": input_text, "kernel": self, "_errors": [], "_stage_metrics": {}}
+        run_hooks("kernel_before", ctx)
+
+        for stage in self._pipeline:
+            ctx = stage.process(ctx)
+            if ctx.get("_early_exit"):
+                return ctx.get("_early_result", KernelResult(
+                    mcxf=None, execution=[], memory_id=None,
+                    feedback=FeedbackReport(), success=False,
+                    errors=ctx["_errors"], execution_plan=None,
+                ))
+
+        if d:
+            d.finish_execution()
+
+        run_hooks("kernel_after", ctx)
+        run_hooks("memory_after", ctx)
+
+        mem_id = ctx.get("mem_id")
+        mcxf = ctx.get("mcxf")
+        mel_result = ctx.get("mel_result", [])
+        feedback = ctx.get("feedback", FeedbackReport())
+        execution_plan = ctx.get("execution_plan")
+
+        exec_id = ctx.get("execution_id", "")
+        r = KernelResult(
+            mcxf=mcxf, execution=mel_result, memory_id=mem_id,
+            feedback=feedback, success=self._is_success(mel_result),
+            errors=ctx["_errors"], execution_plan=execution_plan,
+            execution_id=exec_id,
+        )
+        r.stage_metrics = ctx["_stage_metrics"]
+        return r
+
+    def run(self, input_text: str, execution_context=None):
+        g = self.graph
+        d = self.debugger
+
+        if execution_context is None:
+            from features.identity.execution_context import ExecutionContext
+            execution_context = ExecutionContext()
+
+        execution_id = execution_context.execution_id
+
+        if g and len(g.nodes) > 10000:
+            g.prune_graph()
+
+        if d:
+            d.start_execution(input_text)
+
+        if g:
+            g.emit(EVENT_EXECUTION_STARTED, {
+                "input": input_text,
+                "timestamp": time.time(),
+                "execution_id": execution_id
+            }, execution_id=execution_id)
+
+        _ctx = {
+            "input_text": input_text,
+            "kernel": self,
+            "_errors": [],
+            "_stage_metrics": {},
+            "execution_context": execution_context,
+            "execution_id": execution_id,
+        }
+        run_hooks("kernel_before", _ctx)
+
+        from features.pipeline.governance_stage import GovernanceStage
+        gs = GovernanceStage(self)
+        _ctx = gs.process(_ctx)
+        if _ctx.get("_early_exit"):
+            return _ctx["_early_result"]
+
+        context, enriched_input, intent_id = self.stage_rag(input_text, _ctx)
+
+        mcxf_dict, mcxf = self.stage_mkc(input_text, enriched_input, intent_id, _ctx)
+        if _ctx.get("_mkc_early_exit"):
+            return _ctx["_early_result"]
+
+        section_id = self.stage_mcxf_section(mcxf, intent_id, _ctx)
+
+        execution_plan, plan_id, bridge_mem, bridge_errs = self.stage_bridge(
+            mcxf, input_text, section_id, _ctx.get("mcxf_dict", {}), _ctx)
+        if bridge_mem is not None:
+            return _ctx["_early_result"]
+
+        optimized_plan = self.stage_optimizer(execution_plan, _ctx)
+
+        mel_result = self.stage_mel(
+            _ctx.get("optimized_plan", execution_plan), execution_plan, plan_id, _ctx)
+
+        feedback = self.stage_feedback(
+            mcxf, mel_result, execution_plan, plan_id, _ctx)
+
+        mem_id = self.stage_memory(
+            input_text, mcxf, _ctx.get("mcxf_dict", {}), mel_result, feedback,
+            execution_plan, plan_id, _ctx)
 
         if d:
             d.finish_execution()
@@ -524,7 +701,8 @@ class MuscalKernel:
         r = KernelResult(
             mcxf=mcxf, execution=mel_result, memory_id=mem_id,
             feedback=feedback, success=self._is_success(mel_result),
-            errors=_errors, execution_plan=execution_plan,
+            errors=_ctx["_errors"], execution_plan=execution_plan,
+            execution_id=execution_id,
         )
-        r.stage_metrics = _stage_metrics
+        r.stage_metrics = _ctx["_stage_metrics"]
         return r

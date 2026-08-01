@@ -17,6 +17,7 @@ _ENV_MODE_MAP = {
 
 _BOOL_KEYS = {"enable_graph", "enable_sphere", "enable_system_runtime",
               "enable_browser", "enable_desktop", "verbose_logging", "simulation_mode"}
+_STRING_KEYS = {"execution_mode"}
 _INT_KEYS = {"max_rag_results", "boot_timeout", "health_check_interval"}
 _FLOAT_KEYS = set()
 _ENV_PREFIX = "MUSCAL_"
@@ -34,6 +35,8 @@ def _apply_env_overrides(cfg: 'MuscalConfig') -> None:
             setattr(cfg, f, int(val))
         elif f in _FLOAT_KEYS:
             setattr(cfg, f, float(val))
+        elif f in _STRING_KEYS:
+            setattr(cfg, f, val)
         else:
             field_type = cfg.__dataclass_fields__[f].type
             if field_type is str or field_type == "str":
@@ -57,6 +60,7 @@ class MuscalConfig:
     boot_timeout: float = 30.0
     health_check_interval: float = 5.0
     simulation_mode: bool = False
+    execution_mode: str = ""
     allowed_shell_patterns: List[str] = field(default_factory=lambda: [
         "python3 *", "ls *", "cat *", "echo *", "mkdir *", "cp *", "mv *"
     ])
@@ -95,6 +99,7 @@ def load_config(mode: str = "", overrides: Optional[Dict[str, Any]] = None) -> M
             "enable_desktop": True,
             "verbose_logging": True,
             "simulation_mode": True,
+            "execution_mode": "simulated",
             "boot_timeout": 30.0,
         },
     }
@@ -105,4 +110,7 @@ def load_config(mode: str = "", overrides: Optional[Dict[str, Any]] = None) -> M
         for k, v in overrides.items():
             if hasattr(cfg, k):
                 setattr(cfg, k, v)
+    if not cfg.execution_mode:
+        from features.identity.reality import map_simulation_mode
+        cfg.execution_mode = map_simulation_mode(cfg.simulation_mode)
     return cfg

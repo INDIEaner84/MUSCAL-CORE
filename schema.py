@@ -131,6 +131,7 @@ class KernelResult:
     success: bool
     errors: List[str] = field(default_factory=list)
     execution_plan: Optional[ExecutionPlan] = None
+    execution_id: str = ""
 
 
 # ── Graph Dataclasses ────────────────────────────────────────────────
@@ -143,6 +144,7 @@ class Node:
     timestamp: float
     confidence: float = 1.0
     status: str = "created"
+    execution_id: str = ""
 
 
 @dataclass
