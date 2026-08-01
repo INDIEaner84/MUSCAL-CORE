@@ -41,12 +41,51 @@ def start():
         os_instance.shutdown()
         return
 
+    # Phase 1b: SUPL Runtime + FastAPI Control Plane
+    log.info("Phase 1b: Starting SUPL Runtime...")
+    from features.runtime_canonical import set_server_ready as set_fastapi_ready
+    from features.tool_runtime.tool_runtime import get_global_utr
+    from api_server import create_app
+
+    utr = get_global_utr()
+    if utr is None:
+        log.warning("No global UTR available — SUPL execution will be limited")
+
+    fastapi_app, supl_runtime = create_app(
+        event_bus=os_instance.events,
+        event_store=os_instance.event_store,
+        utr=utr,
+    )
+    set_fastapi_ready(True)
+
+    import uvicorn
+    from threading import Thread
+
+    uvicorn_config = uvicorn.Config(
+        app=fastapi_app,
+        host="0.0.0.0",
+        port=8000,
+        log_level="info",
+    )
+    uvicorn_server = uvicorn.Server(uvicorn_config)
+    uvicorn_thread = Thread(target=uvicorn_server.run, daemon=True, name="uvicorn-supl")
+    uvicorn_thread.start()
+    log.info("SUPL FastAPI running on :8000")
+
+    if _shutdown_requested:
+        uvicorn_server.should_exit = True
+        uvicorn_thread.join(timeout=10)
+        supl_runtime.shutdown()
+        os_instance.shutdown()
+        return
+
     # Phase 2: API Runtime boot
     log.info("Phase 2: Starting API Runtime...")
     from runtime.api import create_app as _create_app
     from runtime.api import set_globals, set_server_ready
     from runtime.api import register_blueprints, init_app
     from runtime.database import check_consistency_on_start, init_db
+    from runtime.event_store import EventStore
     from runtime.kernel.bootstrap import bootstrap_kernel, detect_bootstrap_needed
     from runtime.kernel.governance import GovernanceSync
     from runtime.kernel.scheduler import RoutingPolicy
@@ -58,7 +97,8 @@ def start():
     init_db()
     check_consistency_on_start()
 
-    writer = WriterThread()
+    event_store = EventStore()
+    writer = WriterThread(event_store=event_store)
     writer.start()
 
     if detect_bootstrap_needed():
@@ -91,6 +131,10 @@ def start():
     # Phase 4: Graceful shutdown
     log.info("Shutting down...")
     set_server_ready(False)
+    set_fastapi_ready(False)
+    uvicorn_server.should_exit = True
+    uvicorn_thread.join(timeout=10)
+    supl_runtime.shutdown()
     os_instance.shutdown()
     obs_loop.stop()
     writer.stop()

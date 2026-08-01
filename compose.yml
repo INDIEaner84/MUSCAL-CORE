@@ -5,6 +5,7 @@ services:
       dockerfile: Containerfile
     ports:
       - "${RUNTIME_FLASK_PORT:-5001}:5001"
+      - "${SUPL_API_PORT:-8000}:8000"
     volumes:
       - ./storage:/app/storage:Z
     environment:
