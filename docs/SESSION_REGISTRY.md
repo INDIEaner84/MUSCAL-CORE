@@ -28,7 +28,12 @@
 | S-2026-07-30-001 | 2026-07-30 | ABGESCHLOSSEN | 10 | MC-TC-004 Certification + ARB Decision |
 | S-2026-07-31-001 | 2026-07-31 | ABGESCHLOSSEN | — | MC-TC-007 Reality Closure (CONDITIONAL GO) |
 
-**Hinweis (2026-08-01):** Duplikat `docs/governance/SESSION_REGISTRY.md` (MSCE-Format-Entwurf, Stand 15.07, nie committet) als superseded entfernt — kanonisch bleibt dieses Dokument. Handover-Backfill 28.–31.07 folgt in Phase B.
+**Hinweis (2026-08-01):** Duplikat `docs/governance/SESSION_REGISTRY.md` (MSCE-Format-Entwurf, Stand 15.07, nie committet) als superseded entfernt — kanonisch bleibt dieses Dokument.
+
+**Hinweis (Phase B, PB-01, 2026-08-01):** Handover-Backfill abgeschlossen:
+`HANDOVER_S-2026-07-28-001.md`, `HANDOVER_S-2026-07-30-001.md`,
+`HANDOVER_S-2026-07-31-001.md` erstellt (evidenzbasiert aus Audit-Artefakten;
+S-2026-07-31-001 = Registry-only, Detailinhalt UNKNOWN).
 
 ---
 
