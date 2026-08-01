@@ -1296,3 +1296,246 @@ before `sqlite3.connect()`.
 - All 547 tests pass (100%)
 - Critical for test infrastructure and development workflow
 
+# Architecture Override: Phase 1A — Canonical Event Identity & Reality Enrichment
+
+**Date:** 2026-07-24
+**Authority:** Phase 1A implementation per Architecture Gate approval
+**Scope:** Event enrichment, execution identity, reality integrity, projection, WebSocket
+
+## Override Authority
+
+This override is issued under the authority of the Architecture Gate v1.0
+(GRAPH_OS_ARCHITECTURE_FREEZE_v1.0.md, Section N — P0.4 closed, freeze APPROVED).
+
+## Immutable Files Affected
+
+The AGENTS.md's immutable file list is superseded for Phase 1A by this override because the
+frozen architecture explicitly requires core enrichment. No core-file modifications are made
+in this phase — enrichment is layered through payload propagation and feature modules:
+
+| Immutable File | Phase 1A Change | Mechanism |
+|----------------|-----------------|-----------|
+| `event_bus.py` | NONE | Execution context travels in `payload` dict, not as new `EventMessage` fields |
+| `schema.py` | NONE | `EnrichedNode` in `features/identity/` augments original `Node` at projection layer |
+| `os_config.py` | NONE | ExecutionMode/VerificationState/ExecutionState enums live in `features/identity/reality.py` |
+| `kernel.py` | NONE | `ExecutionContext` wraps `Kernel.run()` externally — no kernel code changed |
+| `muscal_os.py` | NONE | Wiring documented in freeze document; adapter start happens in bootstrap script |
+
+## Files Modified
+
+| File | Change |
+|------|--------|
+| `runtime/event_store.py` | Adds 6 columns to `stored_events`: execution_id, correlation_id, causation_id, execution_mode, execution_state, verification_state |
+| `features/projection/graph_os_projection.py` | Updated to extract execution context from EventMessage payload, produce enriched GraphOSEvent |
+| `features/streaming/ws_adapter.py` | Validated against enriched event contract; carries execution context fields |
+
+## Phase 1C Update
+
+| File | Change |
+|------|--------|
+| `runtime/event_store.py` | Phase 1C: adds `execution_state` column (completes Reality triad: mode, state, verification) |
+| `features/bootstrap/enriched_bootstrap.py` | Phase 1C: stores `execution_state` in enriched persist |
+| `tests/test_phase1c_reality_transport.py` | NEW — 20 tests across 3 classes: RealityIntegrityPipeline, TransportFidelity, EndToEndRealityChain |
+
+## Phase 2 Update — Verification Layer
+
+| File | Change |
+|------|--------|
+| `features/verification/__init__.py` | NEW — Package exports, version 2.0.0 |
+| `features/verification/verifier.py` | NEW — `Verifier` ABC, `MathVerifier`, `FilesystemVerifier`, `OpenCodeRunVerifier`, `IntegrityVerifier`, `BUILTIN_VERIFIERS` registry |
+| `features/verification/orchestrator.py` | NEW — `VerificationOrchestrator`: routes receipts to verifiers, publishes VERIFICATION_PASSED/VERIFICATION_FAILED to EventBus, updates verification_state, enforces hard rules |
+| `features/verification/rules.py` | NEW — `RuleEngine`, `VerificationRule`, `HardRuleViolation`, 9 HARD_RULES from EXECUTION_INTEGRITY_CONTRACT.md |
+| `features/bootstrap/enriched_bootstrap.py` | Phase 2: `EnrichedMuscalOS` accepts `VerificationOrchestrator`; `verify_execution()` method |
+| `tests/test_phase2_verification_layer.py` | NEW — 43 tests across 6 classes: VerifierContract, IntegrityVerifier, MathVerifier, FilesystemVerifier, OpenCodeRunVerifier, VerificationOrchestrator, OrchestratorEventBusPublish, RuleEngine, VerificationResultCanonical |
+
+## Files Created
+
+| File | Purpose |
+|------|---------|
+| `features/identity/uuid7.py` | Pure-Python UUID v7 generator (no stdlib uuid7; Python 3.12) |
+| `features/identity/execution_context.py` | ExecutionContext: single carrier for execution_id, correlation_id, causation_id, execution_mode, verification_state |
+| `features/identity/reality.py` | ExecutionMode (5), ExecutionState (6), VerificationState (4) enums with validity matrix enforcement |
+| `features/identity/__init__.py` | Package exports |
+
+## MC-TC-005.1 Update — Trust Core Closure (C-001, C-003, Cross-Boot)
+
+**Date:** 2026-07-25
+**Authority:** MC-TC-005.1 per GRAPH_OS_ARCHITECTURE_FREEZE_v1.0.md — closure and truth-validation
+
+### Files Modified (MC-TC-005.1)
+
+| File | Change |
+|------|--------|
+| `features/tool_runtime/tool_runtime.py` | Added `_GLOBAL_EVENT_STORE` registry (`set_global_event_store()`/`get_global_event_store()`); added `_GLOBAL_DEFAULT_TIMEOUT` (300s); added `_UNSET_TIMEOUT` sentinel to distinguish "not passed" from `timeout=None`; `execute()` tracks `_pending_futures` and calls `Future.cancel()` on timeout; `set_default_timeout()` per UTR |
+| `features/boot/utr_wiring.py` | **REWRITTEN** — replaces per-UTR `set_global_utr()` with `set_global_event_store()` + `set_global_default_timeout(300)` so ALL `create_default_utr()` callers auto-detect; adds `_assert_trust_core_on()`/`_assert_trust_core_off()` guards; monkey-patch now deterministic and fail-closed |
+| `features/bootstrap/enriched_bootstrap.py` | `_init_trust_core()` simplified to use global registry; removed `set_global_utr()` (not needed since `_get_global_utr()` is dead code) |
+| `spec/OVERRIDE.md` | MC-TC-005.1 update |
+
+### Files Created (MC-TC-005.1)
+
+| File | Purpose |
+|------|---------|
+| `tests/test_cross_boot_trust_core.py` | 22 E2E tests: global registry, timeout semantics, receipt/verification persistence, fresh reader recovery, pipeline CU wiring, mel/tools/cu_stage auto-wiring, watchdog lifecycle, tampered receipt, shutdown cleanup |
+| `docs/audit/MC-TC-005.1-CLOSURE-TRUTH-AUDIT.md` | Final truth audit and certification |
+
+### Remaining Core Changes — NOW RESOLVED
+
+The global EventStore registry approach eliminated the need for immutable core file modifications.
+`create_default_utr()` auto-detects `get_global_event_store()` at call time, wiring all production callers
+(mel.py, tools.py, permission_engine.py, system_runtime.py, cu_stage.py) without modifying them.
+
+The only architectural change that still requires core modification is:
+
+| Immutable File | Required Change | Priority | Justification |
+|----------------|-----------------|----------|---------------|
+| `main_boot.py:232` | Replace `MuscalOS(config)` with `EnrichedMuscalOS(MuscalOS(config))` | P0 | Enables enriched persistence with execution identity, lifecycle events, and full verification chain. Current utr_wiring.py monkey-patch provides functional but less elegant wiring. |
+| `main.py:13` | Replace `MuscalKernel` with `EnrichedMuscalOS` path | P2 | Requires architectural decision — main.py serves a different use case (minimal interactive) |
+
+These are now **enhancement** items, not blocking contradictions. Trust Core functions correctly without them.
+
+## MC-TC-005 Update — Trust Core Wiring & Persistence Consolidation
+
+**Date:** 2026-07-25
+**Authority:** MC-TC-005 per GRAPH_OS_ARCHITECTURE_FREEZE_v1.0.md
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `features/tool_runtime/tool_runtime.py` | `create_default_utr()` accepts `event_store` param → wires receipt/verification callbacks; `UnifiedToolRuntime.shutdown()` added; `_receipt_version` serialized in to_dict/from_dict (N-003 fix) |
+| `features/bootstrap/enriched_bootstrap.py` | `_init_trust_core()` wires UTR with EventStore, sets global UTR, creates VerificationOrchestrator with EventBus, starts ExecutionWatchdog; `shutdown()` stops watchdog + shuts down UTR |
+| `runtime/event_store.py` | NONE — `store_receipt()`/`store_verification()` already correct (C-014 RESOLVED) |
+
+### Files Created
+
+| File | Purpose |
+|------|---------|
+| `features/boot/utr_wiring.py` | Boot-time auto-wiring via monkey-patch of `MuscalOS._init_system_runtime` (triggers during `load_plugins()` from within `_init_plugins()`); wires UTR, starts Watchdog, creates VerificationOrchestrator for every `MuscalOS` boot without modifying core files |
+| `features/boot/__init__.py` | Package init |
+
+### Remaining Core Changes Required
+
+These MC-TC-005 items could not be implemented without modifying immutable core files.
+Deferred for `--allow-core-write` execution:
+
+| Immutable File | Required Change | Priority | Contradiction |
+|----------------|-----------------|----------|---------------|
+| `main_boot.py` | Replace `MuscalOS(config=config)` with `EnrichedMuscalOS(MuscalOS(config=config))` to enable enriched persistence, execution identity, and lifecycle events in production boot | P0 | C-001 |
+| `main.py` | Replace `MuscalKernel` with `EnrichedMuscalOS(MuscalOS())` for same reason, or add FeatureGate check | P1 | C-001 |
+| `tools.py` | Pass `event_store` to `create_default_utr()` so the lazy-init UTR gets callbacks even when `EnrichedMuscalOS` is not used | P1 | C-007, C-008 |
+| `system_runtime.py` (deprecated) | Pass `event_store` to `create_default_utr()` | P2 | C-007 |
+| `permission_engine.py` | Pass `event_store` to `create_default_utr()` | P2 | C-007 |
+| `mel.py` | Pass `event_store` to `create_default_utr()` | P2 | C-007 |
+
+### Receipt and verification events now flow through EventStore
+
+With the feature-layer wiring in place:
+1. `create_default_utr(event_store=es)` wires `set_receipt_callback(lambda r: es.store_receipt(r))`
+2. `create_default_utr(event_store=es)` wires `set_verification_callback(lambda vr: es.store_verification(vr))`
+3. `ExecutionWatchdog` scans `stored_events` for orphan executions and publishes `EXECUTION_FAILED`
+4. Global UTR pre-set before first tool execution via `tools.set_global_utr()`
+5. `UTR.shutdown()` stops `ThreadPoolExecutor` (N-001 fix)
+
+## MC-TC-005.3 — Single Event Authority Consolidation
+
+**Date:** 2026-07-27
+**Authority:** MC-TC-005.3 per GRAPH_OS_ARCHITECTURE_FREEZE_v1.0.md
+**Scope:** Eliminate dual-event-authority split brain (MC-TC-005.2 finding)
+
+### Problem
+
+Two independent event persistence paths existed:
+1. `WriterThread → events` table
+2. `EventStore.append() → stored_events` table
+
+No coordination, no common authority. MC-TC-005.2 certified FAIL.
+
+### Solution
+
+**`EventStore → stored_events` is the single canonical event authority.**
+
+| Change | File | Description |
+|--------|------|-------------|
+| `swap_subscriber()` | `event_bus.py` | Atomic subscriber replacement — eliminates event-loss window during enriched boot |
+| Thread-safe append | `runtime/event_store.py` | Added threading lock; rollback on IntegrityError to release locks; deterministic JSON serialization (`sort_keys=True`) |
+| `schema_version` column | `runtime/event_store.py` | Idempotent migration adds contract versioning |
+| EventStore delegation | `runtime/kernel/writer.py` | `_write_atomic` calls `EventStore.append()` FIRST (canonical), then writes `events` table as derived read model |
+| `_map_to_stored_event()` | `runtime/kernel/writer.py` | Maps WriterThread event dict → EventStore schema |
+| EventStore wiring | `runtime/main.py`, `supervisor.py` | Both boot paths create EventStore and pass to WriterThread |
+| Atomic subscriber swap | `features/bootstrap/enriched_bootstrap.py` | Uses `swap_subscriber` instead of unsafe unsubscribe+subscribe |
+
+### Legacy Strategy
+
+`WriterThread` = **Compatibility Adapter + Derived Read Model**.
+`events` table = **DERIVED** (not canonical). Reverse direction forbidden.
+
+### Certification
+
+**COMPLETE / GO** — 51/51 tests pass. Static scan confirms no production path
+independently writes to `events`. All production writes converge on `EventStore.append()`.
+
+## Validation
+
+All changes comply with:
+- GRAPH_OS_ARCHITECTURE_FREEZE_v1.0.md (all sections)
+- 12 Architecture Laws (Section M)
+- 15/15 Self-Audit Questions
+- Execution integrity contract
+- 9 HARD RULES (EXECUTION_INTEGRITY_CONTRACT.md §9)
+- Authority model (MUSCAL authoritative, Graph-OS derived, Scene ephemeral, ALITA observer)
+- Independent verification (Architecture Law 7): verification functions are independent of agent claims
+- Verification events (VERIFICATION_PASSED/VERIFICATION_FAILED) flow through enrichment pipeline
+
+
+---
+
+# PHASE 1A WAVE SECTIONS (2026-07-24 .. 2026-07-27) — appended during G2-07 reconstruction
+
+Below sections document the Phase 1A / Phase 2 / MC-TC-005 / MC-TC-005.1 / MC-TC-005.3 override wave.
+They were preserved verbatim from the working-tree version dated 2026-07-24 (see G2-07 report).
+Note: section 1 (Immutable Files Affected) claims "NONE" for several core files — this is
+CORRECTED by the G2-07 Adjudication section at the end of this document.
+
+
+---
+
+## G2-07 ADJUDICATION CORRECTION — Phase 1A Core Modifications (2026-08-01)
+
+**Authority:** G2 Adjudication Gate approval (MUSCAL-KRA-2026-08-01, KNOWLEDGE_FOUNDATION/audit/G2_ADJUDICATION_REPORT.md, items G2-02/G2-05/G2-07).
+**Supersedes for truth purposes:** the "NONE" claims in the Phase 1A section above (they documented intent, not reality).
+
+### Truth correction — immutable core files actually modified in the Phase 1A wave
+
+| Immutable File | Actual change (git diff vs cdaa1c2) | Mechanism (corrected) | Decision |
+|----------------|--------------------------------------|-----------------------|----------|
+| `kernel.py` | 252+/74−: `run()` decomposed into `stage_rag()`; `_register_pipeline_stages()` added; execution_id threaded into graph nodes | Pipeline stage protocol + execution identity threading | SANCTIONED (G2-02) |
+| `event_bus.py` | 11+/1−: uuid7 event IDs; `swap_subscriber()` for atomic subscriber replacement (MC-TC-005.3) | Canonical event identity | SANCTIONED (G2-02) |
+| `schema.py` | +2: `execution_id` field on EventMessage | Execution identity carrier | SANCTIONED (G2-02) |
+| `os_config.py` | +8: `execution_mode` config key + `_STRING_KEYS` | Reality-mode config | SANCTIONED (G2-02) |
+| `muscal_os.py` | 44+/8−: `run(execution_mode, execution_context)` signature extension | Reality enrichment entry point | SANCTIONED (G2-02) |
+
+### E3.2 / Phase 1b / MC-TC-004 core modifications
+
+| Immutable File | Change | Decision |
+|----------------|--------|----------|
+| `muscal_loop.py`, `tools.py`, `mel.py`, `permission_engine.py`, `system_runtime.py` | UTR rewiring (ADR-014, E3.2) | SANCTIONED (G2-03) |
+| `supervisor.py`, `api_server.py`, `api/main.py`, `compose.yml` | Phase 1b SUPL + FastAPI control plane | SANCTIONED (G2-04) |
+| `runtime/event_store.py`, `runtime/database.py`, `runtime/kernel/writer.py`, `runtime/main.py` | EventStore trust boundary (MC-TC-004/006) | SANCTIONED (G2-01) |
+
+### Restorations
+
+1. **OVERRIDE-052 restored** — the full Governance Enforcement Layer v1.1 section (above, unchanged) is again present in this file; `override_052_is_active()` (guards/governance_validator.py) is functional again.
+2. **Historical override registry restored** — OVERRIDE-020..055 are preserved in full above; the 2026-07-24 rewrite that replaced them is preserved in the Phase 1A wave sections.
+3. **Retroactive sweep sanction** — 6 CAT-C files committed via PA-02 directory adds are sanctioned (G2-06); see DECISION_REGISTRY D-038.
+
+### Evidence mapping
+
+| Claim | Evidence |
+|-------|----------|
+| Core modifications listed above | `git diff cdaa1c2..HEAD` + working tree (verified 2026-08-01) |
+| MC-TC-004/006 certification | `docs/audit/MC-TC-004_CERTIFICATION_REPORT.md`, `MC-TC-006-*` |
+| E3.2 closure | `docs/engineering/D-E3.2-002-FINAL-CLOSURE.md` |
+| OVERRIDE-052 mechanism | `guards/governance_validator.py:123 override_052_is_active()` |
+| G2 decisions | `KNOWLEDGE_FOUNDATION/audit/G2_ADJUDICATION_REPORT.md` |
+
+**Compliance:** D-006/D-022 immutability contract satisfied retroactively via this adjudication record; all listed changes were committed in the G2 execution (commits below).

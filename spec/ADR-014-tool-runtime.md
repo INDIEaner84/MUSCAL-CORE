@@ -1,7 +1,9 @@
 # ADR-014: Unified Tool Runtime
 
-**Status:** PROPOSED
+**Status:** ACCEPTED
 **Date:** 2026-07-15
+**Updated:** 2026-07-22 — E3.0.2 reconciliation expanded scope to 4 systems
+**Updated:** 2026-08-01 — G2 Adjudication: status finalized (ACCEPTED), governance links added (G2-03)
 
 ## Context
 
@@ -145,3 +147,60 @@ Consolidate into a **Unified Tool Runtime (UTR)** with a single registry, single
 - `mel.py`, `tools.py`, `system_runtime.py` are core files — modifications require `--allow-core-write`
 - `muscal_loop.py` is NOT in the core allowlist — modifications are unrestricted
 - No ADRs superseded: ADR-014 is additive
+
+---
+
+## E3.0.2 Correction — Expanded Scope (2026-07-22)
+
+The independent repository reconciliation (D-E3.0.2-006) identified **4 independent execution systems**, not 2:
+
+| # | System | Location | Executors | Reachability |
+|---|--------|----------|-----------|-------------|
+| A | TOOL_REGISTRY | `tools.py` | 3 (write, add, print_console) | HOT_PATH (via mel.py) |
+| B | EXECUTORS + BrowserAgent | `muscal_loop.py` | 6 (print, browser*3, opencode.run, file.write) | EXPERIMENTAL (standalone loop) |
+| C | SystemAgentRuntime | `system_runtime.py` | BrowserRuntime + DesktopRuntime (both **stubs** — modules missing on disk) | HOT_PATH (via mel.py, but silent fallback) |
+| D | PermissionEngine + ToolExecutor | `permission_engine.py` | Reuses muscal_loop EXECUTORS | COLD_PATH |
+
+### Key Findings for Consolidation Plan
+
+1. **11/14 schemas in tools.py have no executor** — confirmed. ADR-014's Phase 1-3 must add 11 missing executors.
+2. **browser_tools.py and desktop_tools.py don't exist** — `SystemAgentRuntime` silently fails for all browser/desktop operations.
+3. **muscal_loop.py EXECUTORS (6) are the only complete browser implementation** — should be the migration source for UTR's browser executors.
+4. **file.write vs filesystem.write naming conflict** — must be resolved during schema unification.
+5. **permission_engine.py adds no unique execution capability** — can be deprecated; its risk-level classification should merge into SafetyGate.
+6. **`muscal_loop.py` IS in the core allowlist** — correction to original compliance check: `muscal_loop.py` is listed as immutable in both `IMMUTABILITY_CONTRACT.md` and `guards/write_guard.py`.
+
+### Updated Migration Plan
+
+| Step | What | Source System | Target |
+|------|------|---------------|--------|
+| 1 | Create `INSTRUMENTS.md` v1 | All schemas | Unified schema |
+| 2 | Create `runtime/tool_runtime.py` (UTR) | — | New |
+| 3 | Migrate console.print, browser.* | muscal_loop.py EXECUTORS | UTR |
+| 4 | Add filesystem.write + math.add | tools.py TOOL_REGISTRY | UTR |
+| 5 | Add browser.extract_text, screenshot, scroll | tools.py schemas (new executors) | UTR |
+| 6 | Add desktop.* executors | tools.py schemas (new executors) | UTR |
+| 7 | Rewire mel.py → UTR | mel.py | UTR dispatch |
+| 8 | Create SafetyGate | muscal_loop + system_runtime + permission_engine validators | Single validator |
+| 9 | Deprecate system_runtime.py | system_runtime.py | Redirect to UTR |
+| 10 | Remove inline EXECUTORS from muscal_loop.py | muscal_loop.py | Removed after migration |
+
+---
+
+## Governance Links (added 2026-08-01, G2-03 adjudication)
+
+**Status rationale:** DRAFT → ACCEPTED. The E3.2 Trust Boundary Closure (D-E3.2-002-FINAL-CLOSURE.md)
+confirms the UTR consolidation as implemented and certified ("E3.2 CONFIRMED CLOSED", 9 bypasses
+closed, full suite 824 passed). ADR-014 implementation evidence:
+
+| Link | Reference | Role |
+|------|-----------|------|
+| Reconciliation evidence | `docs/engineering/D-E3.0.2-006-TOOL-RUNTIME-CONSOLIDATION.md` (Status: CORRECTED) | 4-system consolidation scope |
+| Implementation certification | `docs/engineering/D-E3.2-002-FINAL-CLOSURE.md` | E3.2 CLOSED — UTR→SafetyGate→Governance→Receipt→Verification chain |
+| Implementation plan | `docs/governance/ADR-014-IMPLEMENTATION_PLAN_v1.1.md` | Step plan TOOL-001..TOOL-007 |
+| Core rewiring | `muscal_loop.py`, `tools.py`, `mel.py`, `permission_engine.py`, `system_runtime.py` (G2-03 SANCTIONED) | EXECUTORS→UTR routing |
+| Decision registry | `KNOWLEDGE_FOUNDATION/audit/DECISION_REGISTRY.md` D-036/D-037 | Adjudication sanction + status finalization |
+
+**Residual items (not blocking ACCEPTED):** desktop/browser executors still stubbed in UTR
+(ADR-014 Phase 1, step 5-6); `system_runtime.py` deprecation pending (step 9); UTR test
+isolation tracked as FL-01a (see KNOWLEDGE_FOUNDATION/audit/G2_ADJUDICATION_REPORT.md).

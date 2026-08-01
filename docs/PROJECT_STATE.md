@@ -118,6 +118,21 @@ prototype-stable
 | HDR-003 (Master Coding AI) | BLOCKED by HDR-001 | Yes |
 | HDR-004 (Requirements) | BLOCKED by HDR-001 | Yes |
 
+## G2 Adjudication Status (2026-08-01)
+
+| Item | Status | Evidence |
+|------|--------|----------|
+| Immutability review (29 Dateien) | **ADJUDIZIERT** — 22 committet (Cluster C1–C4), 6 Swept retroaktiv sanktioniert, 0 Reverts | DECISION_REGISTRY D-036…D-039, G2_ADJUDICATION_REPORT.md |
+| OVERRIDE.md | **REKONSTRUIERT** — Baseline-Registry (OVERRIDE-020…055) + Phase-1A-Wave + Wahrheitskorrektur; OVERRIDE-052-Mechanismus wieder aktiv | spec/OVERRIDE.md (1.541 Zeilen) |
+| ADR-014 (Unified Tool Runtime) | **FINALISIERT** — Status ACCEPTED, Governance-Links (D-E3.0.2-006, D-E3.2-002) | spec/ADR-014-tool-runtime.md |
+| FL-01a (19 flaky Tests) | **DOKUMENTIERT, NICHT GEFIXT** — Root Cause: globale Singletons (`tools._UTR`, `set_global_utr`, `set_global_event_store`); Fix (Test-Fixtures) in Phase B | G2_ADJUDICATION_REPORT.md FL-01a, D-040 |
+| FL-01b (4 Baseline-Tests) | **KALIBRIERT** — EXPECTED_TOTAL an verifizierte Counts angepasst (test-only) | D-041 |
+| Git-Zustand | 22 verbleibende modifizierte Dateien **committet**; Repo wieder sauber | git status, G2 execution commits |
+
+**Konsequenz:** Die D-006/D-022-Verletzung („Core immutable" vs 29 modifizierte Dateien) ist mit
+Ausnahme der Test-Flakiness (D-040) **geschlossen**; `Architecture: IMMUTABLE` gilt ab jetzt wieder
+mit korrigiertem OVERRIDE-Register.
+
 ## Historische Audits
 
 Historische Analysen dienen ausschließlich als Referenz.
