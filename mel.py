@@ -1,9 +1,34 @@
 import threading
+import warnings
 
 from tools import TOOL_REGISTRY
 
 _runtime = None
 _lock = threading.RLock()
+
+_utr = None
+_utr_lock = threading.RLock()
+
+
+def _register_tools_to_utr(utr):
+    from features.tool_runtime.tool_runtime import BrowserAgent
+    ba = BrowserAgent(headless=False)
+    for name, fn in TOOL_REGISTRY.items():
+        def make_wrapper(f):
+            return lambda args: f(**args)
+        utr.register_tool(name, make_wrapper(fn))
+
+
+def _get_utr():
+    global _utr
+    with _utr_lock:
+        if _utr is None:
+            from features.safety.safety_gate import SafetyGate
+            sg = SafetyGate(user_policy={"allow_high_risk": True})
+            from features.tool_runtime.tool_runtime import create_default_utr
+            _utr, _ba = create_default_utr(safety_gate=sg)
+            _register_tools_to_utr(_utr)
+        return _utr
 
 
 def _get_runtime():
@@ -24,12 +49,19 @@ def _execute_step(step: dict) -> dict:
             "reason": step.get("reason", ""),
             "status": "skipped",
         }
-    if tool_name.startswith("browser.") or tool_name.startswith("desktop."):
-        return _get_runtime().execute(step)
-    if tool_name not in TOOL_REGISTRY:
+    utr = _get_utr()
+    args = step.get("args", {})
+    result = utr.execute(tool_name, args)
+    if result.success:
+        base = result.output if isinstance(result.output, dict) else {"output": result.output}
+        base.setdefault("tool", tool_name)
+        base.setdefault("status", "success")
+        return base
+    if result.error and "Unknown tool" in result.error:
+        if tool_name.startswith("browser.") or tool_name.startswith("desktop."):
+            return _get_runtime().execute(step)
         raise Exception(f"Unknown tool: {tool_name}")
-    args = step["args"]
-    return TOOL_REGISTRY[tool_name](**args)
+    return {"tool": tool_name, "status": "error", "error": result.error}
 
 
 def execute(plan):

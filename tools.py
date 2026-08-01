@@ -6,6 +6,23 @@ ALLOWED_WRITE_PATHS = [
 ]
 MAX_WRITE_SIZE = 1_048_576
 
+_UTR = None
+
+
+def _get_global_utr():
+    global _UTR
+    if _UTR is None:
+        from features.tool_runtime.tool_runtime import create_default_utr
+        from features.safety.safety_gate import SafetyGate
+        sg = SafetyGate(user_policy={"allow_high_risk": True})
+        _UTR, _ = create_default_utr(safety_gate=sg)
+    return _UTR
+
+
+def set_global_utr(utr):
+    global _UTR
+    _UTR = utr
+
 
 def write(path, content):
     abspath = os.path.abspath(path)

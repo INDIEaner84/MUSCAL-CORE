@@ -24,21 +24,33 @@ class PermissionEngine:
 
 class ToolExecutor:
     def __init__(self):
-        from muscal_loop import EXECUTORS
-        self._executors = EXECUTORS
+        self._utr = None
+
+    def _get_utr(self):
+        if self._utr is None:
+            from features.tool_runtime.tool_runtime import create_default_utr
+            from features.safety.safety_gate import SafetyGate
+            sg = SafetyGate()
+            sg.permit("console.print")
+            sg.permit("filesystem.write")
+            sg.permit("file.write")
+            sg.permit("math.add")
+            sg.permit("browser.open")
+            sg.permit("browser.click")
+            sg.permit("browser.type")
+            sg.permit("opencode.run")
+            self._utr, _ = create_default_utr(safety_gate=sg)
+        return self._utr
 
     def run(self, tool_name, args):
-        fn = self._executors.get(tool_name)
-        if fn is None:
-            return {"status": "error", "tool": tool_name, "error": "unknown_tool"}
-        try:
-            result = fn(args)
-            if isinstance(result, dict):
-                result.setdefault("status", "executed")
-            result["tool"] = tool_name
-            return result
-        except Exception as e:
-            return {"tool": tool_name, "status": "error", "error": str(e)}
+        utr = self._get_utr()
+        result = utr.execute(tool_name, args)
+        if result.success:
+            base = result.output if isinstance(result.output, dict) else {"output": result.output}
+            base.setdefault("tool", tool_name)
+            base.setdefault("status", "executed")
+            return base
+        return {"tool": tool_name, "status": "error", "error": result.error}
 
 
 class ExecutionFirewall:

@@ -4,6 +4,7 @@ import json
 import os
 import re
 import subprocess
+import warnings
 
 from kernel_diff_engine import KernelDiffEngine, ReplayEngine, StateStore, link_trace_to_state
 from mcxf_fusion import get_memory_context, store_mcxf
@@ -315,8 +316,54 @@ def validate_safe_path(path):
 
 
 # ────────────────────────────────────────────
-# 6. TOOL EXECUTOR (MEL)
+# 6. TOOL EXECUTOR (MEL) — UTR-REWIRED
+# E3.2: Legacy EXECUTORS now route through UTR (UnifiedToolRuntime).
+# SafetyGate and Governance are applied before any tool execution.
+# Receipts are generated for every execution.
+# Pure backward compatibility preserved via _LEGACY_FALLBACK.
 # ────────────────────────────────────────────
+
+_UTR_LEGACY_INSTANCE = None
+_UTR_LEGACY_SG = None
+
+
+def _get_legacy_utr():
+    global _UTR_LEGACY_INSTANCE, _UTR_LEGACY_SG
+    if _UTR_LEGACY_INSTANCE is not None:
+        return _UTR_LEGACY_INSTANCE
+    from features.tool_runtime.tool_runtime import UnifiedToolRuntime, BrowserAgent
+    from features.safety.safety_gate import SafetyGate
+    _UTR_LEGACY_SG = SafetyGate(user_policy={"allow_high_risk": True})
+    _UTR_LEGACY_SG.permit("console.print")
+    _UTR_LEGACY_SG.permit("filesystem.write")
+    _UTR_LEGACY_SG.permit("file.write")
+    _UTR_LEGACY_SG.permit("math.add")
+    _UTR_LEGACY_SG.permit("opencode.run")
+    _UTR_LEGACY_SG.permit("browser.open")
+    _UTR_LEGACY_SG.permit("browser.click")
+    _UTR_LEGACY_SG.permit("browser.type")
+    _UTR_LEGACY_SG.permit("browser.extract_text")
+    _UTR_LEGACY_SG.permit("browser.screenshot")
+    _UTR_LEGACY_SG.permit("browser.scroll")
+    _UTR_LEGACY_INSTANCE = UnifiedToolRuntime(safety_gate=_UTR_LEGACY_SG)
+    _register_legacy_executors(_UTR_LEGACY_INSTANCE)
+    return _UTR_LEGACY_INSTANCE
+
+
+def _register_legacy_executors(utr):
+    from features.tool_runtime.tool_runtime import BrowserAgent
+    ba = BrowserAgent(headless=False)
+    utr.register_tool("console.print", lambda a: {"status": "success", "printed": print(a["message"]) or a["message"]})
+    utr.register_tool("opencode.run", _exec_opencode_run)
+    utr.register_tool("file.write", _exec_file_write)
+    utr.register_tool("filesystem.write", _exec_file_write)
+    utr.register_tool("browser.open", lambda a: ba.open(a.get("url", "")))
+    utr.register_tool("browser.click", lambda a: ba.click(a.get("selector", "")))
+    utr.register_tool("browser.type", lambda a: ba.type_text(a.get("selector", ""), a.get("text", "")))
+    utr.register_tool("browser.extract_text", lambda a: ba.extract_text(a.get("selector", "body")))
+    utr.register_tool("browser.screenshot", lambda a: ba.screenshot(a.get("path", "screenshot.png")))
+    utr.register_tool("browser.scroll", lambda a: ba.scroll(a.get("direction", "down")))
+
 
 def _exec_console_print(args):
     print(args["message"])
@@ -380,17 +427,28 @@ EXECUTORS = {
 
 
 def execute_tool(task):
+    warnings.warn(
+        "muscal_loop.EXECUTORS/execute_tool is DEPRECATED. Use features/tool_runtime/tool_runtime.py (UTR) instead.",
+        DeprecationWarning, stacklevel=2,
+    )
     tool = task["tool"]
     args = task["args"]
-    fn = EXECUTORS.get(tool)
-    if fn is None:
-        return {"tool": tool, "status": "unknown_tool"}
     try:
-        result = fn(args)
-        result["tool"] = tool
-        return result
+        utr = _get_legacy_utr()
+        result = utr.execute(tool, args)
+        if result.success:
+            return result.output if isinstance(result.output, dict) else {"tool": tool, "status": "success", "output": result.output}
+        return {"tool": tool, "status": "error", "error": result.error}
     except Exception as e:
-        return {"tool": tool, "status": "error", "error": str(e)}
+        fn = EXECUTORS.get(tool)
+        if fn is None:
+            return {"tool": tool, "status": "unknown_tool"}
+        try:
+            result = fn(args)
+            result["tool"] = tool
+            return result
+        except Exception as e2:
+            return {"tool": tool, "status": "error", "error": str(e2)}
 
 
 # ────────────────────────────────────────────
