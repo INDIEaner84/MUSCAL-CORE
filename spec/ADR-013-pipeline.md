@@ -1,4 +1,8 @@
-# ADR-007: Feature Plugin Migration Path
+# ADR-013: Feature Plugin Migration Path (historisch — superseded by ADR-007)
+
+**Hinweis (2026-08-01):** Diese Datei war fälschlich als „ADR-007" benannt; der Inhalt ist der
+historische ADR-007-Entwurf (Feature Plugin Migration Path). Gemäß `spec/ADR-INDEX.md` wird der
+Inhalt als ADR-013 (historisch, superseded by ADR-007 Core Immutability) geführt.
 
 **Context:** The project's architecture mandates that all extensions go to `features/` as plugins (`AGENTS.md` / `SESSION_RULES.md`). However, the current `features/` directory contains mostly empty shells:
 
@@ -62,5 +66,5 @@ Move the following into `features/` as plugins:
 **Rationale:** The current hook-only system was a good start but cannot fulfill the architecture mandate of "all extensions go to features/." Without pipeline-stage composability, every new feature either requires a core change (violating immutability) or is limited to passive observation. The `PipelineStage` protocol is minimal, typed, and composable — exactly what a plugin system needs.
 
 **Datum:** 2026-07-08
-**Status:** ACCEPTED
+**Status:** SUPERSEDED (by ADR-007 — Core Immutability, Write Guard Policy)
 **Supersedes:** —

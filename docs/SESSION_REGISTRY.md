@@ -23,6 +23,12 @@
 | S-2026-07-14-003 | 2026-07-14 | ABGESCHLOSSEN | 2 | Checkpoint 0.32 — BrokenLinkScanner Implementation |
 | S-2026-07-15-001 | 2026-07-15 | ABGESCHLOSSEN | 2 | Checkpoint 0.33 — ADR Validator Scanner |
 | S-2026-07-20-001 | 2026-07-20 | ABGESCHLOSSEN | 1 | HDR-001 Decision Readiness Audit |
+| S-2026-07-27-001 | 2026-07-27 | ABGESCHLOSSEN | 15 | MC-TC-004 Pre-Gate (Phases 4-10) + Implementation (S-01..S-04) |
+| S-2026-07-28-001 | 2026-07-28 | ABGESCHLOSSEN | 1 | MC-TC-007 Status Zusammenfassung |
+| S-2026-07-30-001 | 2026-07-30 | ABGESCHLOSSEN | 10 | MC-TC-004 Certification + ARB Decision |
+| S-2026-07-31-001 | 2026-07-31 | ABGESCHLOSSEN | — | MC-TC-007 Reality Closure (CONDITIONAL GO) |
+
+**Hinweis (2026-08-01):** Duplikat `docs/governance/SESSION_REGISTRY.md` (MSCE-Format-Entwurf, Stand 15.07, nie committet) als superseded entfernt — kanonisch bleibt dieses Dokument. Handover-Backfill 28.–31.07 folgt in Phase B.
 
 ---
 

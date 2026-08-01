@@ -1,6 +1,6 @@
 # MUSCAL CORE — Project State
 
-**Letzte Aktualisierung:** 2026-07-20
+**Letzte Aktualisierung:** 2026-08-01 (Phase A Remediation — Audit-Wave-Migration)
 **Nächste Aktualisierung:** Bei nächstem Meilenstein
 
 ---
@@ -13,6 +13,18 @@ Prototype Stable
 
 READY WITH RISKS
 
+## Audit-Status (Stand 2026-08-01)
+
+| Audit | Status | Datum | Hinweis |
+|-------|--------|-------|---------|
+| MC-TC-004 (EventStore Trust Boundary) | **CERTIFIED** | 2026-07-30 | ARB Decision in `docs/audit/MC-TC-004_ARB_DECISION.md` |
+| MC-TC-006 (Replay deterministisch) | CERTIFIED | 2026-07-27 | `docs/audit/MC-TC-006-*` |
+| MC-TC-007 (Reality Closure) | **CONDITIONAL GO** | 2026-07-31 | 2 P0 Blocker offen — siehe §P0 Blocker |
+| MC-TC-005 (Verification Layer) | NOT AUTHORIZED | — | nur Vorarbeiten existieren |
+
+Details: `docs/audit/` (55 Artefakte, MC-TC-002…007, GRAPH_OS-Freeze v1.0).
+**Neueste Projektwahrheit ab 2026-07-27 liegt in `docs/audit/` — nicht mehr allein in diesem Dokument.**
+
 ## Last Validated
 
 2026-07-20
@@ -24,8 +36,16 @@ PASS (100 Iterationen, 0 Crashes, deterministisch)
 ## Testergebnis (2026-07-20)
 
 - **547/547 passed (100%)**, 1 skipped, 0 failed, 0 errors
-- P0/P1 Gaps: ✅ VOLLSTÄNDIG GECHLOSSEN
+- P0/P1 Gaps: ✅ VOLLSTÄNDIG GESCHLOSSEN
 - Letzter Checkpoint: 0.32 (P1 Gaps Closed)
+- ⚠️ Zahlen vom 2026-07-20; Neu-Verifikation nach Audit-Wave ausstehend (Audit-Finding TF-06 — Testzahlen-Kontradiktion).
+
+## P0 Blocker (offen, seit MC-TC-007 2026-07-31)
+
+| # | Blocker | Status | Adressat |
+|---|---------|--------|----------|
+| P0-1 | Graph-OS-State (GraphState/SphereState) ist nur in-memory — nach Restart nicht rekonstruierbar | OFFEN — Entscheidung ausstehend | Phase A Remediation PA-08 (Entscheidung) |
+| P0-2 | Watchdog-Events werden nicht in EventStore persistiert | OFFEN — Entscheidung ausstehend | Phase A Remediation PA-09 (Entscheidung) |
 
 ## Prototype
 
@@ -85,6 +105,7 @@ prototype-stable
 | TECHNICAL BASELINE | `docs/TECHNICAL_BASELINE.md` | Verbindliche Architektur |
 | ARCHITECTURE.md | `docs/ARCHITECTURE.md` | Übersicht + Layering |
 | ADRs | `spec/ADR-*.md` | Architecture Decision Records |
+| AUDIT-WAVE | `docs/audit/` | Zertifizierungen MC-TC-002…007 (neueste Wahrheit ab 27.07) |
 | IMMUTABILITY CONTRACT | `spec/IMMUTABILITY_CONTRACT.md` | Core/Feature-Grenzen |
 | PLUGIN_API.md | `spec/PLUGIN_API.md` | Plugin SDK |
 
