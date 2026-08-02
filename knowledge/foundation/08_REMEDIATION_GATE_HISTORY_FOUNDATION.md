@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/08_REMEDIATION_GATE_HISTORY_FOUNDATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 08_REMEDIATION_GATE_HISTORY_FOUNDATION.md
 
 **Doc:** KF-1/08 · **Date:** 2026-08-02 · **Layer:** STRUCTURED KNOWLEDGE (konsolidiert)

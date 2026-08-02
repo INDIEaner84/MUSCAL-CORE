@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/06_CHAT_CODE_DOC_RECONCILIATION_FOUNDATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 06_CHAT_CODE_DOC_RECONCILIATION_FOUNDATION.md
 
 **Doc:** KF-1B/06 · **Date:** 2026-08-02 · **Layer:** STRUCTURED KNOWLEDGE (konsolidiert)

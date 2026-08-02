@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/12_GOVERNANCE_OPERATIONS_FOUNDATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 12 — Governance Operations Foundation
 
 - Datum: 02.08.2026

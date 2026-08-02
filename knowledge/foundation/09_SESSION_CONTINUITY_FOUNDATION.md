@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/09_SESSION_CONTINUITY_FOUNDATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 09_SESSION_CONTINUITY_FOUNDATION.md
 
 **Doc:** KF-1/09 · **Date:** 2026-08-02 · **Layer:** STRUCTURED KNOWLEDGE (konsolidiert)

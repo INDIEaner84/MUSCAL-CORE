@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/17_BRIDGE_GOVERNANCE_FOUNDATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 17 — Bridge Governance Foundation
 
 - Datum: 02.08.2026

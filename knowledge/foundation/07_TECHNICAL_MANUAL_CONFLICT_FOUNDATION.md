@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/07_TECHNICAL_MANUAL_CONFLICT_FOUNDATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 07_TECHNICAL_MANUAL_CONFLICT_FOUNDATION.md
 
 **Doc:** KF-1B/07 · **Date:** 2026-08-02 · **Layer:** STRUCTURED KNOWLEDGE (konsolidiert)

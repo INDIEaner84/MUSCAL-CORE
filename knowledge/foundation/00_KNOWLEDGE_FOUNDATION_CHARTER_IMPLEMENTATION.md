@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/00_KNOWLEDGE_FOUNDATION_CHARTER_IMPLEMENTATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 00_KNOWLEDGE_FOUNDATION_CHARTER_IMPLEMENTATION.md
 
 **Doc:** KF-1/00 · **Date:** 2026-08-02 · **Layer:** STRUCTURED KNOWLEDGE

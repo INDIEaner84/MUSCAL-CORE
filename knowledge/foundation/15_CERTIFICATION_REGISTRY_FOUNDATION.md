@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/15_CERTIFICATION_REGISTRY_FOUNDATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 15 — Certification Registry Foundation
 
 - Datum: 02.08.2026

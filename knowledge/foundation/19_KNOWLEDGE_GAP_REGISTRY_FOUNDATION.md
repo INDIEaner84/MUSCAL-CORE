@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/foundation/19_KNOWLEDGE_GAP_REGISTRY_FOUNDATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # 19 — Knowledge Gap Registry Foundation
 
 - Datum: 02.08.2026

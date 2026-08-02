@@ -32,7 +32,7 @@ authority_transition:
     - knowledge/reference/
 
 phase:
-  M1
+  M2
 
 migrated_objects:
 
@@ -45,6 +45,15 @@ migrated_objects:
     validation_status: VALIDATED_IDENTICAL
     note: Addendum — B2_EXISTING_CAPABILITY_MAPPING.md (Quelle nach M1 erweitert, 13:40 UTC+2, nachgezogen)
 
+  - source: docs/audit/ (00 + 03-19 Foundation-Docs)
+    target: knowledge/foundation/
+    file_count: 18
+    bytes: 148080
+    hash_before: 9c047140bebcf5e52b9fe4037f68ae194f72421e5720251610961b93ce427a6e
+    hash_after: 9c047140bebcf5e52b9fe4037f68ae194f72421e5720251610961b93ce427a6e
+    validation_status: VALIDATED_IDENTICAL
+    note: Doc 01/02 durch knowledge/reference/ (AUDIT_SCOPE, REPOSITORY_CENSUS) abgedeckt; Redirect-Stubs an Altorten (Header + Original-Inhalt)
+
 status:
-  M1_COMPLETE
+  M2_COMPLETE
 ---
