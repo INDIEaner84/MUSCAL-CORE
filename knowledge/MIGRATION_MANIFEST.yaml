@@ -38,11 +38,12 @@ migrated_objects:
 
   - source: KNOWLEDGE_FOUNDATION/audit/
     target: knowledge/reference/
-    file_count: 54
-    bytes: 593588
-    hash_before: f0e1b9d0e093342aac26247e533a59c889a531cf9c57c484523aa8774f4d3069
-    hash_after: f0e1b9d0e093342aac26247e533a59c889a531cf9c57c484523aa8774f4d3069
+    file_count: 55
+    bytes: 608881
+    hash_before: a7ff9f0a40912eb1a0f2c6159809c0b26974002367cc2cf58a2f756fbc0ce0b3
+    hash_after: a7ff9f0a40912eb1a0f2c6159809c0b26974002367cc2cf58a2f756fbc0ce0b3
     validation_status: VALIDATED_IDENTICAL
+    note: Addendum — B2_EXISTING_CAPABILITY_MAPPING.md (Quelle nach M1 erweitert, 13:40 UTC+2, nachgezogen)
 
 status:
   M1_COMPLETE
