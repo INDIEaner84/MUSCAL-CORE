@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-EVENT-001-eventstore-boundary.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-EVENT-001 — EventStore Authority Boundary
 
 **Status:** PROPOSED → APPROVED

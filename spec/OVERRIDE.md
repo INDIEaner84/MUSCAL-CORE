@@ -1539,3 +1539,25 @@ CORRECTED by the G2-07 Adjudication section at the end of this document.
 | G2 decisions | `KNOWLEDGE_FOUNDATION/audit/G2_ADJUDICATION_REPORT.md` |
 
 **Compliance:** D-006/D-022 immutability contract satisfied retroactively via this adjudication record; all listed changes were committed in the G2 execution (commits below).
+
+## OVERRIDE-074 — M3 Knowledge Consolidation: spec/ Redirect Stubs (2026-08-02)
+
+**Authority:** KNOWLEDGE_CONSOLIDATION_PLAN.md V1.0 (APPROVED, Human 02.08.2026, §2.3), M3-Auftrag (Schritt 5: Redirect-Stubs an alten aktiven Pfaden, keine Löschung).
+**Klassifikation:** ARCHITECTURE CHANGE (Struktur/Referenzierung — KEINE Code-Änderung, keine fachliche ADR-Inhaltsänderung, keine Nummern-Neuvergabe).
+
+### Geänderte geschützte Dateien (Markdown-Redirect-Header, Original-Inhalt unverändert darunter)
+
+| Datei | Änderung | Kanonischer Nachfolger |
+|-------|----------|------------------------|
+| `spec/ADR-001-kernel.md` … `ADR-014`, `ADR-022…025` (18) | `> **REDIRECT:** … knowledge/adr/<datei>` | `knowledge/adr/` |
+| `spec/ADRs/ADR-API/EVENT/RUNTIME-001-*.md` (3) | dito | `knowledge/adr/` |
+| `spec/ADR-INDEX.md` | Redirect auf neuen Index | `knowledge/adr/ADR-INDEX.md` |
+
+**Betroffen:** nur Dokumentations-Stubs (`.md`); keine `*.py`, keine Runtime-, EventStore- oder DB-Struktur. Hash-Identität der migrierten Inhalte verifiziert (23/23 ALL_IDENTICAL, Aggregat `a505bcf0…8ec33`).
+
+**Evidence:**
+- Kanonische Ablage: `knowledge/adr/` (23 ADRs + `ADR_TEMPLATE.md` + `ADR-INDEX.md`)
+- Validierung: `knowledge/M3_MIGRATION_REPORT.md` (Mengen-, Hash-, ID-, Kollisions-, Redirect-Prüfungen alle OK)
+- Migration: MUSCAL-KNOWLEDGE-MIGRATION-001, `knowledge/MIGRATION_MANIFEST.yaml` (phase M3, decisions M3-D1…D3)
+
+**Compliance:** ADR-007 eingehalten (Stop → Klassifikation → Dokumentation → `--allow-core-write` für Struktur-Commits der Stubs). Altorte bleiben bis Gate M6 als Referenz bestehen; keine Löschung.

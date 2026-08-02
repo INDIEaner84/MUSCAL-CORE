@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-020-PIPELINE-STAGES-ADOPTION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-020: Pipeline Stages Adoption
 
 **Status:** DRAFT

@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-004-plugins.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-004: Plugin System — Hook-Based Extensions
 
 **Status:** ACCEPTED  

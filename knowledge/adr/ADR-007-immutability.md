@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-007-immutability.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-007: Core Immutability — Write Guard Policy
 
 **Status:** PROPOSED  

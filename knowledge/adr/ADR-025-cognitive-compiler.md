@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-025-cognitive-compiler.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-025: Cognitive Compiler — Prompts als deklarative kognitive Programme
 
 **Status:** PROPOSED (DRAFT — nicht akzeptiert, keine Umsetzung)

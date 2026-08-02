@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-005-pipeline.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-005: Pipeline Architecture — Monolithic Data Flow
 
 **Status:** ACCEPTED  

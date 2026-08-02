@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-API-001-dual-runtime.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-API-001 — Dual API Runtime During Reality Closure
 
 **Status:** PROPOSED → APPROVED

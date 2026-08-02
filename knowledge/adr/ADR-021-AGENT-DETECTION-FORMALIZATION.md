@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-021-AGENT-DETECTION-FORMALIZATION.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-021: Agent Detection and Task Classification Formalization
 
 **Status:** DRAFT

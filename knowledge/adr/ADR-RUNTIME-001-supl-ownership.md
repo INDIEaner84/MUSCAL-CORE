@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-RUNTIME-001-supl-ownership.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-RUNTIME-001 — MuscalOS Ownership of SUPL Runtime
 
 **Status:** PROPOSED → APPROVED

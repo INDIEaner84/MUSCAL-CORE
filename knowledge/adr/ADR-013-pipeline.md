@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-013-pipeline.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-013: Feature Plugin Migration Path (historisch — superseded by ADR-007)
 
 **Hinweis (2026-08-01):** Diese Datei war fälschlich als „ADR-007" benannt; der Inhalt ist der

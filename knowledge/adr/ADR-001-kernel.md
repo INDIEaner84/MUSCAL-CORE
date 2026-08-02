@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-001-kernel.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-001: Kernel Runtime — Single Pipeline Authority
 
 **Status:** ACCEPTED — Phase 1 ✅  

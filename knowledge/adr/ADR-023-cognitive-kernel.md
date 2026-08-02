@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-023-cognitive-kernel.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-023: Cognitive Kernel + Authoritative Runtime (Edge)
 
 **Status:** PROPOSED (DRAFT — nicht akzeptiert, keine Umsetzung)

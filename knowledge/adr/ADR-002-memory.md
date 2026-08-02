@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-002-memory.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-002: Memory — GraphMemory als Standard-Interface
 
 **Status:** ACCEPTED — Phase 1 ✅, Phase 3 ✅, Phase 4 ✅  

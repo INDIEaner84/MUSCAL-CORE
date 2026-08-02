@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-024-agent-architecture.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-024: Agent-Architektur-Prinzipien P1–P5
 
 **Status:** PROPOSED (DRAFT — nicht akzeptiert, keine Umsetzung)

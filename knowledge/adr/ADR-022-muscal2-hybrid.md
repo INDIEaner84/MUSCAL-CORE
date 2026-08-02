@@ -1,9 +1,3 @@
-> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-022-muscal2-hybrid.md`
->
-> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
-
----
-
 # ADR-022: MUSCAL 2.0 Hybrid-Architektur (MC-015)
 
 **Status:** PROPOSED (DRAFT — nicht akzeptiert, keine Umsetzung)

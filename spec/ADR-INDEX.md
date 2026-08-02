@@ -1,3 +1,9 @@
+> **REDIRECT:** Diese Datei wurde migriert nach: `knowledge/adr/ADR-INDEX.md`
+>
+> Historie bleibt erhalten. Original-Inhalt unverändert unterhalb.
+
+---
+
 # MUSCAL Architecture Decision Records — Kanonische Übersicht
 
 > **G4.5 B1 (2026-08-01):** Kanonische Konsolidierung — ADR-014 Status korrigiert

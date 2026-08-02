@@ -32,7 +32,7 @@ authority_transition:
     - knowledge/reference/
 
 phase:
-  M2
+  M3
 
 migrated_objects:
 
@@ -54,6 +54,32 @@ migrated_objects:
     validation_status: VALIDATED_IDENTICAL
     note: Doc 01/02 durch knowledge/reference/ (AUDIT_SCOPE, REPOSITORY_CENSUS) abgedeckt; Redirect-Stubs an Altorten (Header + Original-Inhalt)
 
+  - source: spec/ (ADR-001..014, 022-025) + spec/ADRs/ (API/EVENT/RUNTIME-001) + docs/engineering/ (ADR-020/021)
+    target: knowledge/adr/
+    file_count: 23
+    bytes: 110972
+    hash_before: a505bcf06df82c5f6b388934b6bd3f0b0b6da2ba694ba6a7bcf07d8ef7d8ec33
+    hash_after: a505bcf06df82c5f6b388934b6bd3f0b0b6da2ba694ba6a7bcf07d8ef7d8ec33
+    validation_status: VALIDATED_IDENTICAL
+    note: ADR_TEMPLATE.md + ADR-INDEX.md (neu, nicht Teil der Hash-Menge); Redirect-Stubs an 24 Altorten; specs/adrs/IMPLEMENTATION_STATUS.md DEPRECATED
+
+decisions:
+
+  - id: M3-D1
+    decision: MC-TC-003A ADR-011..016 verbleiben als kontextualisierte Audit-Artefakte in docs/audit/ (kein Nummern-Reuse, keine Übernahme in die kanonische Serie)
+    rationale: Kollidierende Nummerierung mit kanonischen ADR-011..014 (ADR_CANONICAL_MAP F-05); Audit-Identität bleibt erhalten
+    status: DECIDED
+
+  - id: M3-D2
+    decision: Kanonische Serie wird durch knowledge/adr/ADR-INDEX.md v2.0 geführt; Altorte spec/, spec/ADRs/, docs/engineering/ erhalten Redirect-Stubs bis Gate M6
+    rationale: Ein Kanon, Ein Ablageort (Plan §2.3); Historie bleibt an Altorten erhalten
+    status: DECIDED
+
+  - id: M3-D3
+    decision: specs/adrs/IMPLEMENTATION_STATUS.md und specs/templates/RFC_TEMPLATE.md werden DEPRECATED (keine Löschung)
+    rationale: F-03 (verwaister Ordner) geschlossen; Template-Autorität geht an knowledge/adr/ADR_TEMPLATE.md
+    status: DECIDED
+
 status:
-  M2_COMPLETE
+  M3_COMPLETE
 ---
