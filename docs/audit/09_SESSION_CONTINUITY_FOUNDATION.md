@@ -88,9 +88,9 @@ Quelle: G4_MEASUREMENT_REPORT §M3 (Targets aus SESSION_CONTINUITY_AUDIT §2-Che
 | M-5 | Keine Handovers 28.–31.07; Registry endet 27.07 | Registry + Handover-Dir | HIGH — wer tat was? (**Backfill geschlossen, PB-01**) |
 | M-6 | 29 modifizierte Core-Dateien uncommitted | git status | HIGH — unbeabsichtigte „Reparaturen" (**durch G2 adjudiziert + committet**) |
 | M-7 | v0.8-Changelog ohne ROADMAP-/DECISIONS-Update | CHANGELOG_v0.8.md | MEDIUM |
-| M-8 | ADR-013-Fehllabel (enthält ADR-007-Inhalt) | spec/ADR-013-pipeline.md | LOW — falsche Referenzen |
+| M-8 | ADR-013-Fehllabel (enthält ADR-007-Inhalt) | spec/ADR-013-pipeline.md | LOW — falsche Referenzen (**behoben**, PA-06, d5f5ce7) |
 
-**Status-Hinweise (Klammern) nur mit Commit-/Gate-Beleg:** M-1/M-2/M-3/M-5/M-6 adressiert durch G2-Exekution + PB-01 (G2-Report, c29c8b8); M-4 teilweise (ADR-022 DRAFT, 947d03e); M-7/M-8 offen (RC-5, F-03).
+**Status-Hinweise (Klammern) nur mit Commit-/Gate-Beleg:** M-1/M-2/M-3/M-5/M-6 adressiert durch G2-Exekution + PB-01 (G2-Report, c29c8b8); M-4 teilweise (ADR-022 DRAFT, 947d03e); M-7 offen (RC-5); M-8 behoben (PA-06, d5f5ce7 — Heading + Status SUPERSEDED, Datei bewusst behalten); F-03 (specs/adrs/-Leiche) separat offen (G6-01).
 
 ## 8. Continuity Gaps (bekannte Lücken bleiben Lücken)
 
@@ -101,7 +101,7 @@ Quelle: G4_MEASUREMENT_REPORT §M3 (Targets aus SESSION_CONTINUITY_AUDIT §2-Che
 | G-3 | Fresh-Session-Rerun (echte Session) | empfohlen, nicht durchgeführt — M3-Bestätigung offen | G4-M3, SESSION_CONTINUITY_AUDIT §7 |
 | G-4 | SESSION_RULES-Lesepfad: Bridge-Artefakte (104 untracked) ohne Lesepfad-Regel | offen — Artefakt-Governance (Doc 17) | G4-M1, git status |
 | G-5 | CHANGE_JOURNAL endet 13.07 (kein Fortschritt seit Audit) | offen — dokumentiert | Census §7, SOURCE_OF_TRUTH §2.6 |
-| G-6 | ADR-013-Fehllabel (F-03) | offen | SESSION_CONTINUITY_AUDIT §3 M-8 |
+| G-6 | ADR-013-Fehllabel | behoben (PA-06, d5f5ce7) | SESSION_CONTINUITY_AUDIT §3 M-8, PHASE_A_EXECUTION_RESULT PA-06 |
 
 ## 9. Historical Findings (nur belegte)
 

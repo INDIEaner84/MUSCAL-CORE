@@ -86,7 +86,7 @@ Zweck:
 | Primär | `docs/DECISIONS.md` (stale 12.07) + `spec/ADR-INDEX.md` (kanonisch, G4.5 B1) + DECISION_REGISTRY D-001…D-042 |
 | Sekundär | `docs/CHANGE_JOURNAL.md` (endet 13.07), `docs/engineering/D-*.md` |
 | Tertiär | `archive/history/adrs/` (6), `archive/history/rfcs/` (18) — **keine Autorität** (Prio 6) |
-| Konfliktregel | kanonischer ADR-INDEX gewinnt; ADR-013-Fehllabel = F-03-Problem, keine Autoritätslösung |
+| Konfliktregel | kanonischer ADR-INDEX gewinnt; ADR-013-Fehllabel behoben (PA-06, d5f5ce7: Heading + Status SUPERSEDED, Datei bewusst behalten); F-03 (specs/adrs/-Leiche) separat offen (G6-01) |
 | Evidence Level | C0/C1 |
 
 ### 3.7 Zukunftsplanung
