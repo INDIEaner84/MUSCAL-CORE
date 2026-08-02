@@ -1,0 +1,49 @@
+---
+migration_id:
+  MUSCAL-KNOWLEDGE-MIGRATION-001
+
+date:
+  "2026-08-02"
+
+source:
+  path: /home/hz/AlitaProject/Codebase/KNOWLEDGE_FOUNDATION
+  type: external
+
+target:
+  path: /home/hz/AlitaProject/Codebase/MUSCAL CORE/knowledge
+  type: git-integrated
+
+strategy:
+  mode:
+    copy_then_validate
+
+validation:
+  hash_verification:
+    enabled
+  schema_validation:
+    pending
+
+authority_transition:
+
+  before:
+    - KNOWLEDGE_FOUNDATION
+
+  after:
+    - knowledge/reference/
+
+phase:
+  M1
+
+migrated_objects:
+
+  - source: KNOWLEDGE_FOUNDATION/audit/
+    target: knowledge/reference/
+    file_count: 54
+    bytes: 593588
+    hash_before: f0e1b9d0e093342aac26247e533a59c889a531cf9c57c484523aa8774f4d3069
+    hash_after: f0e1b9d0e093342aac26247e533a59c889a531cf9c57c484523aa8774f4d3069
+    validation_status: VALIDATED_IDENTICAL
+
+status:
+  M1_COMPLETE
+---
