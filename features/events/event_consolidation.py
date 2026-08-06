@@ -51,6 +51,8 @@ class ConsolidatedEventWriter:
             "execution_mode": execution_mode,
             "verification_state": verification_state,
         }
+        if extra:  # additive P0-2: forward observer fields to the store
+            es_event.update(extra)
 
         seq = self._event_store.append(es_event)
 
