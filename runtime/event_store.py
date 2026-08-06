@@ -63,7 +63,14 @@ class EventStore:
                 execution_state TEXT NOT NULL DEFAULT 'planned',
                 verification_state TEXT NOT NULL DEFAULT 'unverified',
                 is_replayed INTEGER NOT NULL DEFAULT 0,
-                receipt_id TEXT NOT NULL DEFAULT ''
+                receipt_id TEXT NOT NULL DEFAULT '',
+                aggregate_id TEXT NOT NULL DEFAULT '',
+                aggregate_type TEXT NOT NULL DEFAULT '',
+                metadata TEXT NOT NULL DEFAULT '{}',
+                payload_delta TEXT NOT NULL DEFAULT '{}',
+                parent_event_id TEXT NOT NULL DEFAULT '',
+                prev_hash TEXT NOT NULL DEFAULT '',
+                logical_time INTEGER NOT NULL DEFAULT 0
             )"""
         )
         self._conn.execute(
@@ -73,6 +80,7 @@ class EventStore:
             "CREATE INDEX IF NOT EXISTS idx_stored_events_created ON stored_events(created_at)"
         )
         self._migrate_add_columns()
+        self._migrate_schema_v2()
         self._conn.execute(
             "CREATE INDEX IF NOT EXISTS idx_stored_events_execution ON stored_events(execution_id)"
         )
@@ -118,14 +126,22 @@ class EventStore:
                 except Exception:
                     pass
 
+            def _json_field(value: Any, fallback: str) -> str:
+                if value in (None, ""):
+                    return fallback
+                if isinstance(value, str):
+                    return value
+                return json.dumps(value, ensure_ascii=False, sort_keys=True)
+
             try:
                 cursor = self._conn.execute(
                     """INSERT INTO stored_events
                        (topic, payload, source, priority, timestamp, event_id, created_at,
                         execution_id, correlation_id, causation_id, execution_mode,
                         execution_state, verification_state, schema_version, is_replayed,
-                        receipt_id)
-                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
+                        receipt_id, aggregate_id, aggregate_type, metadata, payload_delta,
+                        parent_event_id, prev_hash, logical_time)
+                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)""",
                     (
                         event.get("topic", ""),
                         payload,
@@ -143,6 +159,13 @@ class EventStore:
                         event.get("schema_version", 1),
                         int(is_replayed),
                         event.get("receipt_id", ""),
+                        event.get("aggregate_id", ""),
+                        event.get("aggregate_type", ""),
+                        _json_field(event.get("metadata"), "{}"),
+                        _json_field(event.get("payload_delta"), "{}"),
+                        event.get("parent_event_id", ""),
+                        event.get("prev_hash", ""),
+                        int(event.get("logical_time", 0)),
                     ),
                 )
                 self._conn.commit()
@@ -302,6 +325,53 @@ class EventStore:
             )
         self._conn.commit()
 
+    def _migrate_schema_v2(self) -> None:
+        """Additive schema v2 migration for cognitive-ledger fields.
+
+        Idempotent: every column is only added if it does not already exist.
+        Safety checks: target table must exist; per-column existence via PRAGMA.
+        No data rewrite: SQLite ALTER TABLE ADD COLUMN is metadata-only, all
+        new columns carry constant defaults (backfill happens in place).
+        """
+        table = "stored_events"
+        exists = self._conn.execute(
+            "SELECT 1 FROM sqlite_master WHERE type='table' AND name=?",
+            (table,),
+        ).fetchone()
+        if not exists:
+            raise RuntimeError(f"Cannot migrate: table '{table}' does not exist")
+
+        existing = {
+            r["name"] for r in self._conn.execute(f"PRAGMA table_info({table})")
+        }
+
+        v2_cols = {
+            "aggregate_id": "TEXT NOT NULL DEFAULT ''",
+            "aggregate_type": "TEXT NOT NULL DEFAULT ''",
+            "metadata": "TEXT NOT NULL DEFAULT '{}'",
+            "payload_delta": "TEXT NOT NULL DEFAULT '{}'",
+            "parent_event_id": "TEXT NOT NULL DEFAULT ''",
+            "prev_hash": "TEXT NOT NULL DEFAULT ''",
+            "logical_time": "INTEGER NOT NULL DEFAULT 0",
+        }
+        if "schema_version" not in existing:
+            v2_cols["schema_version"] = "INTEGER NOT NULL DEFAULT 1"
+
+        missing = [col for col in v2_cols if col not in existing]
+        if missing:
+            logger.warning(
+                "Schema v2 migration on '%s': backup the database file first "
+                "(ALTER TABLE ADD COLUMN is metadata-only, no data rewrite). "
+                "Adding columns: %s",
+                table,
+                ", ".join(sorted(missing)),
+            )
+            for col_name in missing:
+                self._conn.execute(
+                    f"ALTER TABLE {table} ADD COLUMN {col_name} {v2_cols[col_name]}"
+                )
+        self._conn.commit()
+
     def replay(
         self,
         cursor: Optional[int] = None,
@@ -387,4 +457,20 @@ class EventStore:
             "is_replayed": bool(row["is_replayed"]) if "is_replayed" in row.keys() else False,
             "receipt_id": row["receipt_id"] if "receipt_id" in row.keys() else "",
             "schema_version": row["schema_version"] if "schema_version" in row.keys() else 1,
+            "aggregate_id": row["aggregate_id"] if "aggregate_id" in row.keys() else "",
+            "aggregate_type": row["aggregate_type"] if "aggregate_type" in row.keys() else "",
+            "metadata": self._json_or_raw(row["metadata"]) if "metadata" in row.keys() else {},
+            "payload_delta": self._json_or_raw(row["payload_delta"]) if "payload_delta" in row.keys() else {},
+            "parent_event_id": row["parent_event_id"] if "parent_event_id" in row.keys() else "",
+            "prev_hash": row["prev_hash"] if "prev_hash" in row.keys() else "",
+            "logical_time": row["logical_time"] if "logical_time" in row.keys() else 0,
         }
+
+    @staticmethod
+    def _json_or_raw(raw: Any) -> Any:
+        if raw in (None, ""):
+            return {} if isinstance(raw, str) else raw
+        try:
+            return json.loads(raw)
+        except (json.JSONDecodeError, TypeError):
+            return raw
