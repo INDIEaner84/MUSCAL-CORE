@@ -27,6 +27,7 @@
 | S-2026-07-28-001 | 2026-07-28 | ABGESCHLOSSEN | 1 | MC-TC-007 Status Zusammenfassung |
 | S-2026-07-30-001 | 2026-07-30 | ABGESCHLOSSEN | 10 | MC-TC-004 Certification + ARB Decision |
 | S-2026-07-31-001 | 2026-07-31 | ABGESCHLOSSEN | — | MC-TC-007 Reality Closure (CONDITIONAL GO) |
+| S-2026-08-04-001 | 2026-08-04 | ABGESCHLOSSEN | 15 | Browser Intelligence Feature (features/browser_intelligence) |
 
 **Hinweis (2026-08-01):** Duplikat `docs/governance/SESSION_REGISTRY.md` (MSCE-Format-Entwurf, Stand 15.07, nie committet) als superseded entfernt — kanonisch bleibt dieses Dokument.
 

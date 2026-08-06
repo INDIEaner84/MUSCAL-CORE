@@ -48,6 +48,45 @@ class GovernanceStage:
             )
         except Exception as e:
             log.warning("Failed to record governance decision: %s", e)
+        self._emit_ledger_event(ctx, decision_id, action, status, reason)
+
+    def _emit_ledger_event(self, ctx, decision_id, action, status, reason):
+        """Additional, non-breaking EventStore append (ledger view).
+
+        Existing storage (decisions table) is untouched; this only mirrors the
+        governance decision as a ledger event when a global EventStore is wired.
+        """
+        try:
+            from features.tool_runtime.tool_runtime import get_global_event_store
+            import time
+            es = get_global_event_store()
+            if es is None:
+                return
+            topic = {
+                "allow": "governance.approved",
+                "block": "governance.rejected",
+            }.get(action, "governance.reviewed")
+            es.append({
+                "topic": topic,
+                "payload": {
+                    "decision_id": decision_id,
+                    "action": action,
+                    "status": status,
+                    "reason": reason or "",
+                    "trace_id": ctx.get("trace_id", ""),
+                    "span_id": ProvenanceContext.get_span_id(),
+                },
+                "source": "GovernanceStage",
+                "priority": "NORMAL",
+                "timestamp": time.time(),
+                "id": f"gov-{decision_id}",
+                "correlation_id": ctx.get("trace_id", ""),
+                "schema_version": 2,
+                "aggregate_id": decision_id,
+                "aggregate_type": "governance",
+            })
+        except Exception as e:
+            log.warning("Failed to emit governance ledger event: %s", e)
 
     def process(self, ctx):
         if "trace_id" not in ctx:
