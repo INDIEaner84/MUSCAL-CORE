@@ -1,0 +1,11 @@
+# Browser Intelligence — pinned dependencies
+#
+# Install into the shared project venv:
+#   .venv/bin/pip install -r features/browser_intelligence/requirements.txt
+#
+# Version pins verified 2026-08-04 against PyPI.
+
+browser-use==0.13.7
+langchain-ollama>=0.2.0
+python-dotenv>=1.0.0
+httpx>=0.27.0
