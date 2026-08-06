@@ -1489,6 +1489,40 @@ All changes comply with:
 
 ---
 
+## OVERRIDE-075 — Schema v2 Migration: event_store.py (2026-08-06)
+
+**Authority:** Runtime evolution per STABILIZATION_PLAN.md (Phase 3: Runtime & Database Adaptation)
+**Classification:** SCHEMA EVOLUTION (backward-compatible, additive columns only)
+
+### Files Modified
+
+| File | Change |
+|------|--------|
+| `runtime/event_store.py` | Schema v2 migration: adds `schema_version` column (default 2), adds `execution_context` column for structured execution metadata, updates `stored_events` table creation to v2 schema, preserves backward compatibility with v1 data |
+
+### Schema Changes
+
+| Column | Type | Default | Purpose |
+|--------|------|---------|---------|
+| `schema_version` | INTEGER | 2 | Contract versioning for future migrations |
+| `execution_context` | TEXT | NULL | JSON-serialized execution identity (execution_id, correlation_id, causation_id, mode, state, verification) |
+
+### Migration Strategy
+
+- **Idempotent:** `IF NOT EXISTS` ensures safe re-execution
+- **Backward compatible:** v1 data remains readable; schema_version enables future conditional logic
+- **No data loss:** additive columns only, no existing columns modified or removed
+
+### Evidence
+
+- `git diff runtime/event_store.py`: +92/-3 lines
+- Tests: `tests/test_event_store_v2_migration.py` (8/8 pass)
+- Tests: `tests/features/events/test_event_store.py` (30/30 pass)
+
+**Compliance:** ADR-007 respected (documented before commit); Core Immutability override via --allow-core-write.
+
+---
+
 # PHASE 1A WAVE SECTIONS (2026-07-24 .. 2026-07-27) — appended during G2-07 reconstruction
 
 Below sections document the Phase 1A / Phase 2 / MC-TC-005 / MC-TC-005.1 / MC-TC-005.3 override wave.
