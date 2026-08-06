@@ -1,0 +1,43 @@
+report:
+  generated_at: "2026-08-01T21:05:01.169538+00:00"
+  project:
+    root: /home/hz/AlitaProject/Codebase/MUSCAL CORE
+    branch: main
+    commit: 70f630efcf4b9348782457db245457e498a02192
+    dirty: true
+  task:
+    task:
+      id: 9014bbff-1389-4132-9452-65f9b5f08ee4
+      project: muscal-core
+      objective: --help
+      constraints:
+      expected_output: null
+      verification_required: true
+  execution:
+    status: completed
+    facts:
+      verified:
+    observations:
+      extracted:
+        -
+          statement: Output was not valid JSON; captured as raw text
+          source: result_normalizer
+    interpretations:
+      inferred:
+    hypotheses:
+      proposed:
+    unknowns:
+    execution:
+      return_code: 0
+      duration: 7.225109
+      session_reference: null
+    raw_artifacts:
+      stdout_reference: "stdout:1646b"
+      stderr_reference: null
+  changes:
+  tests:
+  risks:
+    -
+      priority: P1
+      description: "Verification failed: 1 findings"
+  next_action: Review execution output and verify results
