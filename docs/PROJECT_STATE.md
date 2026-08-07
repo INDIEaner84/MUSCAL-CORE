@@ -1,9 +1,18 @@
 # MUSCAL CORE — Project State
 
-**Letzte Aktualisierung:** 2026-08-01 (Phase A Remediation — Audit-Wave-Migration)
+**Letzte Aktualisierung:** 2026-08-07 (Reality Synchronization Layer — `features/reality_sync/`)
 **Nächste Aktualisierung:** Bei nächstem Meilenstein
 
 ---
+
+## Notable Additions (2026-08-07)
+
+- **Reality Synchronization Layer (RSL)** implementiert in `features/reality_sync/`
+  (DriftDetector, RiskClassifier, ProposalEngine, RealitySynchronizer, Modelle, Validator).
+  Reine Proposal-Pipeline — kein automatischer Write auf EventStore/Canonical.
+  - Tests: `tests/features/reality_sync/test_reality_sync.py` — **11/11 PASS**
+  - Regression: 24 relevante Event-/Knowledge-Tests PASS
+  - Doku: `docs/reality_sync/` (ANALYSIS, ARCHITECTURE, IMPLEMENTATION_REPORT, VALIDATION_REPORT, RSL_COMPLETE)
 
 ## Project Phase
 
