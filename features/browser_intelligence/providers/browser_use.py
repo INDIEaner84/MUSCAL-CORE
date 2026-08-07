@@ -15,6 +15,7 @@ Facts verified against browser-use 0.13.7 public API.
 
 from __future__ import annotations
 
+import os
 import time
 import urllib.parse
 
@@ -57,6 +58,10 @@ class BrowserUseProvider(ResearchProvider):
         if constraints:
             task = task + "\nConstraints: " + "; ".join(constraints)
 
+        os.environ.setdefault("TIMEOUT_BrowserStartEvent", str(cfg.start_timeout))
+        os.environ.setdefault("TIMEOUT_BrowserLaunchEvent", str(cfg.launch_timeout))
+        os.environ.setdefault("TIMEOUT_NavigateToUrlEvent", str(cfg.nav_timeout))
+
         llm = resolve_chat_llm()
 
         if llm is not None and cfg.agent_mode:
@@ -73,7 +78,9 @@ class BrowserUseProvider(ResearchProvider):
             try:
                 findings = await self._synthesize(task, findings, llm, cfg)
             except Exception as exc:
-                warnings.append(f"Synthesis failed ({exc}); kept raw extraction")
+                warnings.append(
+                    f"Synthesis failed ({type(exc).__name__}: {exc}); kept raw extraction"
+                )
 
         findings.elapsed_ms = int((time.time() - started) * 1000)
         return findings
@@ -137,33 +144,43 @@ class BrowserUseProvider(ResearchProvider):
         query = urllib.parse.quote(clean_query)
         page_text = ""
         engine_used = ""
-        session = None
-        try:
-            session = BrowserSession(
-                headless=cfg.headless,
-                user_agent=(
-                    "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
-                    "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"
-                ),
-            )
-            await session.start()
-            for engine in _ENGINES:
-                url = engine.format(query=query)
-                try:
-                    await session.navigate_to(url)
-                    state = await session.get_state_as_text()
-                except Exception:
-                    continue
-                if state and len(state.strip()) > 30:
-                    page_text = state
-                    engine_used = url
-                    break
-        finally:
-            if session is not None:
-                try:
-                    await session.stop()
-                except Exception:
-                    pass
+        attempts = max(1, int(getattr(cfg, "browser_retries", 1)))
+        for attempt in range(attempts):
+            session = None
+            try:
+                session = BrowserSession(
+                    headless=cfg.headless,
+                    executable_path=cfg.chromium or None,
+                    enable_default_extensions=False,
+                    user_agent=(
+                        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 "
+                        "(KHTML, like Gecko) Chrome/126.0 Safari/537.36"
+                    ),
+                )
+                await session.start()
+                for engine in _ENGINES:
+                    url = engine.format(query=query)
+                    try:
+                        await session.navigate_to(url)
+                        state = await session.get_state_as_text()
+                    except Exception:
+                        continue
+                    if state and len(state.strip()) > 30 and not self._looks_like_captcha(state):
+                        page_text = state
+                        engine_used = url
+                        break
+                break
+            except Exception as exc:
+                if attempt + 1 < attempts:
+                    warnings.append(f"Browser attempt {attempt + 1}/{attempts} failed ({exc})")
+                else:
+                    warnings.append(f"Browser failed after {attempts} attempts ({exc})")
+            finally:
+                if session is not None:
+                    try:
+                        await session.stop()
+                    except Exception:
+                        pass
 
         facts = self._parse_facts_from_text(page_text, cfg.max_results)
         if not facts:
@@ -191,8 +208,13 @@ class BrowserUseProvider(ResearchProvider):
     async def _synthesize(self, task, findings, llm, cfg):
         from browser_use.llm import SystemMessage, UserMessage
 
+        from ..llm import resolve_synthesis_llm
+
+        synth_llm = resolve_synthesis_llm()
+        effective = synth_llm or llm
+
         raw = "\n".join("- " + f for f in findings.facts)
-        response = await llm.ainvoke(
+        response = await effective.ainvoke(
             [
                 SystemMessage(content=_SYNTH_SYSTEM),
                 UserMessage(
@@ -249,6 +271,18 @@ class BrowserUseProvider(ResearchProvider):
 
     def _section_lines(self, sections, name):
         return [ln.strip("-• \t") for ln in sections.get(name, []) if ln.strip()]
+
+    def _looks_like_captcha(self, text: str) -> bool:
+        markers = (
+            "unusual traffic",
+            "not a robot",
+            "ich bin kein roboter",
+            "captcha",
+            "verify you are a human",
+            "sorry, no robots allowed",
+        )
+        lowered = text.lower()
+        return any(m in lowered for m in markers)
 
     def _parse_facts_from_text(self, text, limit):
         noise = (

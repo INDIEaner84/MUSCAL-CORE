@@ -92,3 +92,36 @@ def resolve_chat_llm():
         except Exception:
             pass
     return None
+
+
+def resolve_synthesis_llm():
+    """Return a synthesis-tuned chat model, or None for non-Ollama providers.
+
+    The default chat model requests up to 2048 tokens and a long read budget,
+    which is wasteful for the short structured synthesis call and prone to
+    timeouts on slow CPU-only Ollama. Synthesis hence uses a bounded model:
+    fewer tokens and a shorter timeout, so a slow box degrades to the raw
+    extraction instead of blocking.
+    """
+    cfg = get_config()
+    override = cfg.llm_provider or os.environ.get("BROWSER_INTEL_LLM", "").lower()
+    if override in ("openai", "browseruse", "none"):
+        return None
+    wanted = override == "ollama" or _ollama_reachable(cfg.ollama_base)
+    if not wanted:
+        return None
+    try:
+        from browser_use.llm.ollama.chat import ChatOllama
+
+        return ChatOllama(
+            model=cfg.ollama_model,
+            host=cfg.ollama_base,
+            ollama_options={
+                "num_ctx": 8192,
+                "num_predict": cfg.synthesis_max_tokens,
+                "temperature": 0.0,
+            },
+            timeout=cfg.synthesis_timeout_seconds,
+        )
+    except Exception:
+        return None

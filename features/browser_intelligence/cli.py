@@ -16,6 +16,8 @@ def main(argv=None):
 
     findings = ResearchService().research(question)
     print(findings.to_markdown())
+    for warning in getattr(findings, "warnings", []) or []:
+        print(f"warning: {warning}", file=sys.stderr)
     return 0
 
 

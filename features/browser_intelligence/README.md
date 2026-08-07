@@ -84,13 +84,63 @@ Structured output contains: `FACTS`, `ANALYSIS`, `OPTIONS`,
 | `BROWSER_INTEL_SYNTHESIZE` | `1` | Enable LLM synthesis of raw extracts |
 | `BROWSER_INTEL_MAX_STEPS` | `12` | Agent loop cap |
 | `BROWSER_INTEL_MAX_RESULTS` | `5` | Max facts from extraction |
-| `BROWSER_INTEL_CHROMIUM` | (auto) | Path to a Chromium binary |
+| `BROWSER_INTEL_CHROMIUM` | `/usr/bin/chromium` if present | Path to a Chromium binary |
+| `BROWSER_INTEL_START_TIMEOUT` | `120` | Seconds allowed for browser session start |
+| `BROWSER_INTEL_LAUNCH_TIMEOUT` | `120` | Seconds allowed for the local Chromium launch |
+| `BROWSER_INTEL_NAV_TIMEOUT` | `60` | Seconds allowed for page navigation |
+| `BROWSER_INTEL_BROWSER_RETRIES` | `3` | Retries for the browser start/extract phase |
+| `BROWSER_INTEL_SYNTH_MAX_TOKENS` | `512` | Token budget for the synthesis LLM call |
+| `BROWSER_INTEL_SYNTH_TIMEOUT_SECONDS` | `240` | Read timeout for the synthesis LLM call |
 | `BROWSER_USE_HEADLESS` | `1` | Set to `0` for a visible browser |
 
 ## MCP gateway integration
 
-The research capability registers itself in the existing MUSCAL interface
-gateway as the tool `browser_intelligence.research`:
+Two ways to expose the research capability as the tool `browser_intelligence.research`:
+
+### 1. Native MCP stdio server (OpenCode)
+
+A standalone MCP server that publishes `browser_intelligence.research` over
+JSON-RPC on stdio — this is the format OpenCode consumes directly. The tool
+reuses `ResearchService` unchanged and returns structured findings:
+
+```
+question (str, required)  context (str, optional)  depth (quick|standard|deep, default standard)
+  └──> { facts, analysis, options, recommendation, confidence, warnings, sources }
+```
+
+```bash
+.venv/bin/python -m features.browser_intelligence.mcp_server
+```
+
+OpenCode config (`opencode.json`):
+
+```jsonc
+{
+  "mcp": {
+    "browser-intelligence": {
+      "type": "stdio",
+      "command": "/home/hz/AlitaProject/Codebase/MUSCAL CORE/.venv/bin/python",
+      "args": ["-m", "features.browser_intelligence.mcp_server"]
+    }
+  }
+}
+```
+
+Verified against the `mcp` client SDK: initialize handshake, `tools/list`
+returns exactly one tool, invalid input surfaces as `isError: true` with the
+validation message.
+
+```python
+# Call the tool programmatically (any MCP client, incl. a future OpenCode session)
+from features.browser_intelligence.mcp_server import run_research
+
+result = run_research({"question": "What is MUSCAL?", "depth": "deep"})
+```
+
+### 2. Internal MCP gateway registration
+
+The same capability registers into the existing MUSCAL interface gateway /
+Unified Tool Runtime:
 
 ```python
 from features.browser_intelligence.mcp_registration import register_research_tool
@@ -98,16 +148,22 @@ from features.browser_intelligence.mcp_registration import register_research_too
 register_research_tool()  # registers into MCPGateway + ToolRegistry
 ```
 
-Registration is guarded: it never raises and reports status dicts. A real
-MCP stdio server (for direct OpenCode tool calls) is a documented future
-step — see `docs/engineering/D-MC-BI-001-browser-intelligence.md`.
+Registration is guarded: it never raises and reports status dicts.
 
 ## Constraints / notes
 
 - MUSCAL Core is untouched; everything lives under `features/`.
-- Imports of `browser_use` are lazy so the plugin loader never chokes on a
-  system python without the venv packages.
-- Search engines occasionally block headless browsers (captcha); the module
-  degrades gracefully (Low confidence + warning) instead of failing.
+- Imports of `browser_use` and `mcp` are lazy (inside the server/tool
+  functions) so the plugin loader never chokes on a system python without the
+  venv packages. `mcp_server.py` triggers no side effects at import time and
+  needs no `Plugin` class (it runs as a separate stdio process).
+- Search engines occasionally block headless browsers (captcha); captcha pages
+  are detected and skipped so the fallback engine chain (Google -> Bing ->
+  DuckDuckGo) is used instead. The module degrades gracefully (Low confidence
+  + warning) instead of failing.
+- Local browser start is retried up to `BROWSER_INTEL_BROWSER_RETRIES` times
+  (default 3) because the default browser-use event budgets (30s) race slow
+  Chromium cold starts on loaded machines; the feature raises its own
+  start/launch budgets via `BROWSER_INTEL_*_TIMEOUT` accordingly.
 - On CPU-only Ollama the LLM calls are slow (~1-3 min). Prefer a warm model
   or a GPU-backed Ollama for agent mode.
