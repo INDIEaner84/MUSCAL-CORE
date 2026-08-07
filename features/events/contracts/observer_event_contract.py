@@ -16,6 +16,7 @@ No graph.py rewrite, no EventStore change, no core architecture change.
 from __future__ import annotations
 
 import time
+import uuid
 from dataclasses import dataclass, field, asdict
 from typing import Any, Dict, Optional
 
@@ -119,4 +120,83 @@ class ObserverEvent:
             "task_id": self.task_id,
             "confidence": self.confidence,
             "previous_hash": self.previous_hash,
+        }
+
+
+@dataclass
+class NormalizedEvent:
+    """Producer-facing normalized event (P0-1).
+
+    Canonical, transport-independent representation produced by the
+    EventProducer. ``event_hash`` is NOT a manual field: it is always
+    derived from the canonical representation (``hash_content()``) via the
+    existing H2 hash pipeline (``features/events/event_hash.py``).
+
+    Fields:
+    * event_id        – unique id (default: uuid4); store UNIQUE constraint
+                        doubles as idempotency guard
+    * event_type      – one of the GECS observer types (E1–E10 + extras)
+    * producer        – logical producer id (e.g. "eventstore_v2_adapter")
+    * timestamp       – wall-clock transport metadata (EXCLUDED from hash)
+    * payload         – business payload (dict)
+    * metadata        – transport/chain metadata: source, actor, trace_id,
+                        version, schema_version, agent_id, task_id,
+                        confidence, previous_hash
+    * correlation_id  – correlation identifier (not hashed, H2 contract)
+
+    No Core changes; reuses the observer contract types for validation.
+    """
+
+    event_type: str
+    event_id: str = field(default_factory=lambda: str(uuid.uuid4()))
+    producer: str = "eventstore_v2_adapter"
+    timestamp: float = field(default_factory=time.time)
+    payload: Dict[str, Any] = field(default_factory=dict)
+    metadata: Dict[str, Any] = field(default_factory=dict)
+    correlation_id: str = ""
+
+    def __post_init__(self) -> None:
+        if self.event_type not in ALL_OBSERVER_EVENT_TYPES:
+            raise ValueError(
+                f"unknown event type: {self.event_type!r} "
+                f"(allowed: {sorted(ALL_OBSERVER_EVENT_TYPES)})"
+            )
+        if not isinstance(self.payload, dict):
+            raise TypeError(f"payload must be a dict, got {type(self.payload).__name__}")
+        if not isinstance(self.metadata, dict):
+            raise TypeError(
+                f"metadata must be a dict, got {type(self.metadata).__name__}"
+            )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return asdict(self)
+
+    @classmethod
+    def from_dict(cls, data: Dict[str, Any]) -> "NormalizedEvent":
+        return cls(
+            event_type=data["event_type"],
+            event_id=data.get("event_id", "") or str(uuid.uuid4()),
+            producer=data.get("producer", "eventstore_v2_adapter"),
+            timestamp=float(data.get("timestamp", time.time())),
+            payload=dict(data.get("payload") or {}),
+            metadata=dict(data.get("metadata") or {}),
+            correlation_id=data.get("correlation_id", ""),
+        )
+
+    def hash_content(self) -> Dict[str, Any]:
+        """Canonical content for hashing (H2 contract, timestamp excluded).
+
+        Mirrors the field set used by ``state_model.validate_chain`` so that
+        stored producer events are replay-verifiable by the existing P0-3
+        validation (same input ⇒ same hash).
+        """
+        md = self.metadata or {}
+        return {
+            "event_type": self.event_type,
+            "source": md.get("source", self.producer),
+            "payload": self.payload,
+            "agent_id": md.get("agent_id", ""),
+            "task_id": md.get("task_id", ""),
+            "confidence": float(md.get("confidence", 0.0)),
+            "previous_hash": md.get("previous_hash", ""),
         }

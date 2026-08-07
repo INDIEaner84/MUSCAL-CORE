@@ -33,9 +33,11 @@ HASH_CONTENT_FIELDS = (
 
 def _canonical_content(event: Mapping[str, Any]) -> Dict[str, Any]:
     try:
-        from .contracts.observer_event_contract import ObserverEvent
+        from .contracts.observer_event_contract import NormalizedEvent, ObserverEvent
 
         if isinstance(event, ObserverEvent):
+            return event.hash_content()
+        if isinstance(event, NormalizedEvent):
             return event.hash_content()
     except ImportError:  # pragma: no cover - defensive
         pass
@@ -71,3 +73,26 @@ def validate_hash(event: Mapping[str, Any] | Any, expected: str) -> bool:
     if not expected:
         return True
     return calculate_event_hash(event) == expected
+
+
+class HashService:
+    """Thin wrapper (P0-1) over the existing H2 hash pipeline.
+
+    Deliberately NOT a new hash implementation: it reuses
+    ``calculate_event_hash``/``validate_hash`` (single source of truth).
+    Keeps the hash responsibility cleanly separated from the producer
+    adapter while keeping determinism (same input ⇒ same hash).
+    """
+
+    def __init__(self, algorithm: str = HASH_ALGORITHM) -> None:
+        if algorithm not in ("sha256",):
+            raise ValueError(f"unsupported algorithm: {algorithm!r}")
+        self.algorithm = algorithm
+
+    def calculate_hash(self, event: Mapping[str, Any] | Any) -> str:
+        """Compute the canonical SHA-256 digest for an event."""
+        return calculate_event_hash(event)
+
+    def verify_hash(self, event: Mapping[str, Any] | Any, expected: str) -> bool:
+        """Return True if the recomputed hash equals ``expected``."""
+        return validate_hash(event, expected)
