@@ -58,6 +58,10 @@ class MCPLEventType(str, Enum):
 
     EXECUTION_REPLAY = "execution.replay"
 
+    REVIEW_TASK = "review.task"
+    REVIEW_FINDING = "review.finding"
+    REVIEW_CONSENSUS = "review.consensus"
+
 
 # ---------------------------------------------------------------------------
 # Event Type → Entity Mapping
@@ -257,6 +261,30 @@ _EVENT_MAPPINGS: Dict[MCPLEventType, EventMapping] = {
         required_correlation_id=True,
         required_causation_id=True,
         payload_fields=("execution_id", "replay_of", "replay_classification"),
+    ),
+    MCPLEventType.REVIEW_TASK: EventMapping(
+        event_type=MCPLEventType.REVIEW_TASK,
+        entity_type="ReviewTask",
+        required_causal_parent=False,
+        required_correlation_id=True,
+        required_causation_id=False,
+        payload_fields=("task_id", "target_commit", "review_type", "target_files"),
+    ),
+    MCPLEventType.REVIEW_FINDING: EventMapping(
+        event_type=MCPLEventType.REVIEW_FINDING,
+        entity_type="ReviewFinding",
+        required_causal_parent=True,
+        required_correlation_id=True,
+        required_causation_id=True,
+        payload_fields=("finding_id", "task_id", "finding_type", "severity", "confidence"),
+    ),
+    MCPLEventType.REVIEW_CONSENSUS: EventMapping(
+        event_type=MCPLEventType.REVIEW_CONSENSUS,
+        entity_type="Consensus",
+        required_causal_parent=True,
+        required_correlation_id=True,
+        required_causation_id=True,
+        payload_fields=("consensus_id", "task_id", "status", "confidence", "dissent"),
     ),
 }
 
