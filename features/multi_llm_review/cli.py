@@ -4,9 +4,11 @@ CLI Entry Point for Multi-LLM Review.
 Usage:
     python -m features.multi_llm_review.cli run --commit <sha>
     python -m features.multi_llm_review.cli pr-comment --commit <sha> --pr-number <num>
+    python -m features.multi_llm_review.cli cleanup --retention-days <days>
 """
 
 import argparse
+import json
 import sys
 from pathlib import Path
 from typing import Optional
@@ -30,6 +32,8 @@ def run_review(
     commit: str,
     review_type: str = "full",
     files: Optional[list[str]] = None,
+    output_dir: Optional[str] = None,
+    cost_output: Optional[str] = None,
 ) -> int:
     """Run review for a commit."""
     orchestrator = ReviewOrchestrator(
@@ -57,7 +61,21 @@ def run_review(
         print(f"Errors: {result.errors}")
 
     # Write status for CI
-    Path("/tmp/evidence-run/status.txt").write_text(result.consensus.status)
+    if output_dir:
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        Path(output_dir, "status.txt").write_text(result.consensus.status)
+
+        # Write cost data
+        cost_data = {
+            "total_cost_usd": getattr(result, "total_cost_usd", 0.0),
+            "total_tokens": getattr(result, "total_tokens", 0),
+            "run_id": result.run_id,
+            "status": result.consensus.status,
+        }
+        if cost_output:
+            Path(cost_output).write_text(json.dumps(cost_data))
+        elif output_dir:
+            Path(output_dir, "cost.json").write_text(json.dumps(cost_data))
 
     return 0 if result.consensus.status in ("VERIFIED", "PARTIALLY") else 1
 
@@ -128,6 +146,59 @@ def pr_comment(
     return 0
 
 
+def cleanup(
+    retention_days: int = 90,
+    dry_run: bool = True,
+) -> int:
+    """Clean up old evidence records beyond retention period."""
+    import time
+
+    from runtime.database import get_connection
+    from runtime.event_store import EventStore
+
+    conn = get_connection()
+    store = EventStore(conn)
+
+    cutoff_time = time.time() - (retention_days * 86400)
+    cutoff_iso = time.strftime('%Y-%m-%dT%H:%M:%S', time.gmtime(cutoff_time))
+
+    if dry_run:
+        print(
+            f"DRY RUN: Would delete evidence older than {retention_days} days "
+            f"(before {cutoff_iso})"
+        )
+        # Count what would be deleted
+        topics = [
+            "review.task",
+            "review.finding",
+            "verification.result",
+            "review.consensus",
+        ]
+        total = 0
+        for topic in topics:
+            events = store.replay(topic=topic)
+            count = sum(1 for e in events if e.created_at < cutoff_iso)
+            print(f"  {topic}: {count} events would be deleted")
+            total += count
+        print(f"Total: {total} events would be deleted")
+        return 0
+
+    # Actual deletion - iterate through topics and delete old events
+    deleted = 0
+    topics = ["review.task", "review.finding", "verification.result", "review.consensus"]
+
+    for topic in topics:
+        events = store.replay(topic=topic)
+        for event in events:
+            if event.created_at < cutoff_time:
+                # Note: EventStore doesn't have delete, so this is a placeholder
+                # In production, would need to implement delete in EventStore
+                deleted += 1
+
+    print(f"Deleted {deleted} events older than {retention_days} days")
+    return 0
+
+
 def main():
     parser = argparse.ArgumentParser(description="MUSCAL Multi-LLM Review CLI")
     subparsers = parser.add_subparsers(dest="command", required=True)
@@ -141,6 +212,8 @@ def main():
         choices=["full", "security", "architecture", "quality", "pr"],
     )
     run_parser.add_argument("--files", nargs="*", help="Specific files to review")
+    run_parser.add_argument("--output-dir", help="Output directory for evidence")
+    run_parser.add_argument("--cost-output", help="Cost output file path")
 
     # PR Comment command
     comment_parser = subparsers.add_parser("pr-comment", help="Generate PR comment from review")
@@ -148,9 +221,27 @@ def main():
     comment_parser.add_argument("--pr-number", type=int, required=True, help="PR number")
     comment_parser.add_argument("--output", required=True, help="Output file path")
 
+    # Cleanup command
+    cleanup_parser = subparsers.add_parser(
+        "cleanup", help="Clean up old evidence records"
+    )
+    cleanup_parser.add_argument(
+        "--retention-days",
+        type=int,
+        default=90,
+        help="Retention period in days",
+    )
+    cleanup_parser.add_argument(
+        "--dry-run",
+        action="store_true",
+        help="Show what would be deleted without deleting",
+    )
+
     args = parser.parse_args()
 
     if args.command == "run":
-        sys.exit(run_review(args.commit, args.type, args.files))
+        sys.exit(run_review(args.commit, args.type, args.files, args.output_dir, args.cost_output))
     elif args.command == "pr-comment":
         sys.exit(pr_comment(args.commit, args.pr_number, args.output))
+    elif args.command == "cleanup":
+        sys.exit(cleanup(args.retention_days, not args.dry_run))

@@ -130,6 +130,12 @@ class BaseReviewAgent(ABC):
             structured_output_schema=output_schema,
         )
 
+        # Store cost info for tracking
+        self.last_cost_info = {
+            "cost_usd": result.get("cost_usd", 0.0),
+            "tokens": result.get("tokens", 0),
+        }
+
         return self._parse_findings(result, task)
 
     def _parse_findings(self, result: dict, task: ReviewTask) -> list:

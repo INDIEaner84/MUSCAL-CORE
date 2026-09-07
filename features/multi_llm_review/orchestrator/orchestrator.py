@@ -33,6 +33,9 @@ class OrchestratorConfig:
     enable_judge: bool = True
     max_parallel_agents: int = 4
     timeout_seconds: int = 300
+    # Cost tracking
+    track_costs: bool = True
+    cost_budget_usd: float = 50.0
 
 
 @dataclass
@@ -47,6 +50,10 @@ class ReviewResult:
     completed_at: float
     duration_seconds: float
     errors: list[str] = field(default_factory=list)
+    total_cost_usd: float = 0.0
+    total_tokens: int = 0
+    cost_per_agent: dict[str, float] = field(default_factory=dict)
+    tokens_per_agent: dict[str, int] = field(default_factory=dict)
 
 
 class ReviewOrchestrator:
@@ -84,6 +91,10 @@ class ReviewOrchestrator:
         run_id = str(uuid4())
         started_at = time.time()
         errors = []
+        total_cost_usd = 0.0
+        total_tokens = 0
+        cost_per_agent = {}
+        tokens_per_agent = {}
 
         try:
             # 1. Record review task
@@ -94,11 +105,18 @@ class ReviewOrchestrator:
             self.evidence_store.record_technical_verification(tech_verification)
 
             # 3. Run Model Agents in parallel (or sequential)
-            agent_findings = self._run_model_agents(task, errors)
+            agent_findings, cost_info = self._run_model_agents(task, errors)
 
             # 4. Build Consensus (Judge agent + Technical Verification)
             consensus = self._build_consensus(task, agent_findings, tech_verification, errors)
             self.evidence_store.record_consensus(consensus)
+
+            # Aggregate costs from agents
+            for role, cost in self._agent_costs.items():
+                total_cost_usd += cost.get("cost_usd", 0.0)
+                total_tokens += cost.get("tokens", 0)
+                cost_per_agent[role] = cost.get("cost_usd", 0.0)
+                tokens_per_agent[role] = cost.get("tokens", 0)
 
         except Exception as e:
             errors.append(f"Orchestrator error: {e}")
@@ -115,16 +133,21 @@ class ReviewOrchestrator:
             completed_at=completed_at,
             duration_seconds=completed_at - started_at,
             errors=errors,
+            total_cost_usd=total_cost_usd,
+            total_tokens=total_tokens,
+            cost_per_agent=cost_per_agent,
+            tokens_per_agent=tokens_per_agent,
         )
 
     def _run_model_agents(
         self,
         task: ReviewTask,
         errors: list[str],
-    ) -> dict[str, list]:
-        """Run all enabled model agents and collect findings."""
+    ) -> tuple[dict[str, list], dict[str, dict]]:
+        """Run all enabled model agents and collect findings with cost tracking."""
         agents = self._get_agents()
         agent_findings = {}
+        self._agent_costs = {}  # role -> {"cost_usd": float, "tokens": int}
 
         # Collect context for agents (repo state, diff, etc.)
         context = self._build_context(task)
@@ -138,11 +161,22 @@ class ReviewOrchestrator:
                 for finding in findings:
                     self.evidence_store.record_review_finding(finding)
 
+                # Extract cost info from agent if available
+                cost_info = getattr(agent, "last_cost_info", None)
+                if cost_info:
+                    self._agent_costs[role] = {
+                        "cost_usd": cost_info.get("cost_usd", 0.0),
+                        "tokens": cost_info.get("tokens", 0),
+                    }
+                else:
+                    self._agent_costs[role] = {"cost_usd": 0.0, "tokens": 0}
+
             except Exception as e:
                 errors.append(f"Agent {role} error: {e}")
                 agent_findings[role] = []
+                self._agent_costs[role] = {"cost_usd": 0.0, "tokens": 0}
 
-        return agent_findings
+        return agent_findings, self._agent_costs
 
     def _build_context(self, task: ReviewTask) -> str:
         """Build context string for agents (repo info, diff, etc.)."""
