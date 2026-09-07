@@ -1,0 +1,162 @@
+name: Multi-LLM Review
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+    inputs:
+      commit:
+        description: 'Target commit SHA'
+        required: false
+        type: string
+      type:
+        description: 'Review type'
+        required: false
+        default: 'full'
+        type: choice
+        options: [full, security, architecture, quality, pr]
+
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
+
+env:
+  PYTHON_VERSION: '3.11'
+  MUSCAL_ENV: production
+
+jobs:
+  multi-llm-review:
+    name: Multi-LLM Evidence Review
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: |
+          pip install -e ".[dev]"
+          pip install pytest pytest-mock
+
+      - name: Configure LLM Provider Secrets
+        run: |
+          echo "LLM_AUDITOR_PROVIDER=${{ secrets.LLM_AUDITOR_PROVIDER }}" >> $GITHUB_ENV
+          echo "LLM_AUDITOR_MODEL=${{ secrets.LLM_AUDITOR_MODEL }}" >> $GITHUB_ENV
+          echo "LLM_AUDITOR_API_KEY=${{ secrets.LLM_AUDITOR_API_KEY }}" >> $GITHUB_ENV
+          echo "LLM_ARCHITECT_PROVIDER=${{ secrets.LLM_ARCHITECT_PROVIDER }}" >> $GITHUB_ENV
+          echo "LLM_ARCHITECT_MODEL=${{ secrets.LLM_ARCHITECT_MODEL }}" >> $GITHUB_ENV
+          echo "LLM_ARCHITECT_API_KEY=${{ secrets.LLM_ARCHITECT_API_KEY }}" >> $GITHUB_ENV
+          echo "LLM_REVIEWER_PROVIDER=${{ secrets.LLM_REVIEWER_PROVIDER }}" >> $GITHUB_ENV
+          echo "LLM_REVIEWER_MODEL=${{ secrets.LLM_REVIEWER_MODEL }}" >> $GITHUB_ENV
+          echo "LLM_REVIEWER_API_KEY=${{ secrets.LLM_REVIEWER_API_KEY }}" >> $GITHUB_ENV
+          echo "LLM_JUDGE_PROVIDER=${{ secrets.LLM_JUDGE_PROVIDER }}" >> $GITHUB_ENV
+          echo "LLM_JUDGE_MODEL=${{ secrets.LLM_JUDGE_MODEL }}" >> $GITHUB_ENV
+          echo "LLM_JUDGE_API_KEY=${{ secrets.LLM_JUDGE_API_KEY }}" >> $GITHUB_ENV
+          echo "LLM_ORCHESTRATOR_PROVIDER=${{ secrets.LLM_ORCHESTRATOR_PROVIDER }}" >> $GITHUB_ENV
+          echo "LLM_ORCHESTRATOR_MODEL=${{ secrets.LLM_ORCHESTRATOR_MODEL }}" >> $GITHUB_ENV
+          echo "LLM_ORCHESTRATOR_API_KEY=${{ secrets.LLM_ORCHESTRATOR_API_KEY }}" >> $GITHUB_ENV
+
+      - name: Determine target commit
+        id: commit
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            echo "sha=${{ github.event.pull_request.head.sha }}" >> $GITHUB_OUTPUT
+            echo "type=pr" >> $GITHUB_OUTPUT
+          elif [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ -n "${{ github.event.inputs.commit }}" ]; then
+            echo "sha=${{ github.event.inputs.commit }}" >> $GITHUB_OUTPUT
+            echo "type=${{ github.event.inputs.type }}" >> $GITHUB_OUTPUT
+          else
+            echo "sha=${{ github.sha }}" >> $GITHUB_OUTPUT
+            echo "type=push" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Run Multi-LLM Review
+        id: review
+        run: |
+          python -m features.multi_llm_review.cli run \
+            --commit ${{ steps.commit.outputs.sha }} \
+            --type ${{ steps.commit.outputs.type }} \
+            --output-dir /tmp/evidence-run
+        env:
+          MUSCAL_STORAGE_ROOT: /tmp/muscal-test-${{ github.run_id }}
+
+      - name: Upload Evidence Artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: evidence-${{ steps.commit.outputs.sha }}
+          path: /tmp/evidence-run/
+          retention-days: 90
+
+      - name: Generate PR Comment
+        if: github.event_name == 'pull_request' && always()
+        id: comment
+        run: |
+          python -m features.multi_llm_review.cli pr-comment \
+            --commit ${{ steps.commit.outputs.sha }} \
+            --pr-number ${{ github.event.number }} \
+            --output /tmp/pr-comment.md
+        env:
+          MUSCAL_STORAGE_ROOT: /tmp/muscal-test-${{ github.run_id }}
+
+      - name: Post PR Comment
+        if: github.event_name == 'pull_request' && always() && steps.comment.outputs.comment != ''
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const comment = fs.readFileSync('/tmp/pr-comment.md', 'utf8');
+            await github.rest.issues.createComment({
+              issue_number: ${{ github.event.number }},
+              owner: ${{ github.repository_owner }},
+              repo: ${{ github.event.repository.name }},
+              body: comment
+            });
+
+      - name: Check Review Status
+        if: always()
+        run: |
+          if [ -f /tmp/evidence-run/status.txt ]; then
+            STATUS=$(cat /tmp/evidence-run/status.txt)
+            echo "Review Status: $STATUS"
+            if [ "$STATUS" = "CONTRADICTION" ] || [ "$STATUS" = "UNVERIFIED" ]; then
+              echo "::error::Review failed with status: $STATUS"
+              exit 1
+            fi
+          fi
+
+  # Optional: Cost monitoring job
+  cost-monitor:
+    name: Cost Monitor
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Log Review Costs
+        run: |
+          echo "Review completed. Cost tracking placeholder."
+          # In production: query LLM provider APIs for token usage/costs
+          # Alert if monthly budget exceeded
+
+  # Optional: Notify on failure
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [multi-llm-review]
+    if: failure()
+    steps:
+      - name: Send Failure Notification
+        run: |
+          echo "Multi-LLM Review failed. Notification placeholder."
+          # In production: Slack, email, PagerDuty, etc.
